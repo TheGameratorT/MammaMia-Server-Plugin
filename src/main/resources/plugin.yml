@@ -1,0 +1,12 @@
+name: MammaMia
+version: 1.0-SNAPSHOT
+main: com.thegameratort.mammamia.MammaMia
+api-version: 1.16
+authors: [ TheGameratorT ]
+description: The mamma mia server controller plugin.
+depend: [ Multiverse-Core, Multiverse-Inventories ]
+
+commands:
+  manhunt:
+    description: Generic MammaMia Command
+    usage: /<command>
