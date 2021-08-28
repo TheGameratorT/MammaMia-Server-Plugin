@@ -85,11 +85,12 @@ public class CockhuntListener implements Listener
             {
                 int teamID = this.mhMgr.getPlayerTeam(player);
                 String msg = this.getNextRandomMsg(player, teamID);
-                switch(teamID) {
-                    case 0:
+                switch(teamID)
+                {
+                    case ManhuntTeam.Hunters:
                         player.sendMessage(ChatColor.GOLD + msg);
                         break;
-                    case 1:
+                    case ManhuntTeam.Runners:
                         player.sendMessage(ChatColor.RED + msg);
                 }
             }
@@ -109,10 +110,10 @@ public class CockhuntListener implements Listener
     public void onPlayerDeath(PlayerDeathEvent event)
     {
         Player player = event.getEntity();
-        if (this.mhMgr.getPlayerInTeam(player, 1))
+        if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Runners))
         {
             String playerName = player.getName();
-            for (Player hunter : this.mhMgr.getTeamPlayers(0))
+            for (Player hunter : this.mhMgr.getTeamPlayers(ManhuntTeam.Hunters))
             {
                 hunter.sendMessage(playerName + " died, enjoy his pingas.");
                 ItemStack stack = new ItemStack(Material.END_ROD, 1);
@@ -148,11 +149,12 @@ public class CockhuntListener implements Listener
     {
         ArrayList<String> rngMsgs = this.rngCockMsg.computeIfAbsent(player, k -> new ArrayList<>());
         String[] cockMsgs;
-        switch(teamID) {
-            case 0:
+        switch(teamID)
+        {
+            case ManhuntTeam.Hunters:
                 cockMsgs = this.hunterCockMsg;
                 break;
-            case 1:
+            case ManhuntTeam.Runners:
                 cockMsgs = this.runnerCockMsg;
                 break;
             default:

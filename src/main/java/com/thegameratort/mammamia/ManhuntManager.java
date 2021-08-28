@@ -41,10 +41,6 @@ public class ManhuntManager
     private ManhuntTrackManager mhTrackMgr = null;
     private final FileConfiguration config;
     private final MultiverseCore mvCore;
-    public static final int TEAM_NONE = -1;
-    public static final int TEAM_HUNTERS = 0;
-    public static final int TEAM_RUNNERS = 1;
-    public static final int TEAM_SPECTATORS = 2;
     public Team[] teams = new Team[3];
     private final HashMap<String, String> targets = new HashMap<>();
     private final HashMap<String, Location> portals = new HashMap<>();
@@ -159,8 +155,8 @@ public class ManhuntManager
             return false;
         }
 
-        int hunterCount = this.getTeamPlayers(0).size();
-        int runnerCount = this.getTeamPlayers(1).size();
+        int hunterCount = this.getTeamPlayers(ManhuntTeam.Hunters).size();
+        int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
         if (hunterCount == 0 && runnerCount == 0) {
             sender.sendMessage("Unable to start the Manhunt, no hunters nor runners found.");
             return false;
@@ -186,7 +182,7 @@ public class ManhuntManager
 
         for (Player player : this.getParticipants())
         {
-            if (getPlayerInTeam(player, 2))
+            if (getPlayerInTeam(player, ManhuntTeam.Spectators))
                 continue;
             player.setGameMode(GameMode.SURVIVAL);
             player.getInventory().clear();
@@ -198,18 +194,18 @@ public class ManhuntManager
 
         if (this.isCockhunt)
         {
-            for (Player runner : this.getTeamPlayers(1))
+            for (Player runner : this.getTeamPlayers(ManhuntTeam.Runners))
                 runner.sendTitle("Run as fast as possible!", "They want your pingas...", 10, 70, 20);
         }
 
-        for (Player hunter : this.getTeamPlayers(0))
+        for (Player hunter : this.getTeamPlayers(ManhuntTeam.Hunters))
         {
             if (this.isCockhunt)
                 hunter.sendMessage("GO GET THAT PINGAS! :>");
             this.giveHunterCompass(hunter, null);
         }
 
-        for (Player player : getTeamPlayers(2))
+        for (Player player : getTeamPlayers(ManhuntTeam.Spectators))
             player.setGameMode(GameMode.SPECTATOR);
 
         this.targets.clear();
@@ -289,12 +285,12 @@ public class ManhuntManager
         }
 
         int currentTeamID = this.getPlayerTeam(player);
-        if (currentTeamID == -1) {
+        if (currentTeamID == ManhuntTeam.None) {
             sender.sendMessage("You don't belong to any team already.");
             return;
         }
 
-        this.setPlayerTeam(player, currentTeamID, -1);
+        this.setPlayerTeam(player, currentTeamID, ManhuntTeam.None);
         sender.sendMessage("You left your team.");
     }
 
@@ -322,7 +318,7 @@ public class ManhuntManager
         String smsg;
         if (teamName.equals("none"))
         {
-            this.setPlayerTeam(player, currentTeamID, -1);
+            this.setPlayerTeam(player, currentTeamID, ManhuntTeam.None);
             pmsg = "You do not belong to a team anymore.";
             smsg = playerName + " was removed from his team.";
         }
@@ -357,6 +353,8 @@ public class ManhuntManager
             sender.sendMessage("Cockhunt was enabled!");
             this.isCockhunt = true;
         }
+        this.config.set("isCockhunt", this.isCockhunt);
+        this.plugin.saveConfig();
     }
 
     public void updateCompassTarget(Player hunter, Player runner)
@@ -502,9 +500,9 @@ public class ManhuntManager
     {
         Location spawn;
         Team team;
-        if (newTeamID != -1)
+        if (newTeamID != ManhuntTeam.None)
         {
-            if (currentTeamID == -1)
+            if (currentTeamID == ManhuntTeam.None)
             {
                 spawn = this.mvCore.getMVWorldManager().getMVWorld("manhunt").getSpawnLocation();
                 this.mvCore.getSafeTTeleporter().safelyTeleport(Bukkit.getConsoleSender(), player, spawn, false);
@@ -514,7 +512,7 @@ public class ManhuntManager
         }
         else
         {
-            if (currentTeamID != -1)
+            if (currentTeamID != ManhuntTeam.None)
             {
                 spawn = this.mvCore.getMVWorldManager().getMVWorld("lobby").getSpawnLocation();
                 this.mvCore.getSafeTTeleporter().safelyTeleport(Bukkit.getConsoleSender(), player, spawn, false);
@@ -554,7 +552,7 @@ public class ManhuntManager
     public ArrayList<Player> getRunnerHunters(Player runner)
     {
         ArrayList<Player> hunters = new ArrayList<>();
-        for (Player hunter : getTeamPlayers(0))
+        for (Player hunter : getTeamPlayers(ManhuntTeam.Hunters))
         {
             if (getHunterTarget(hunter) == runner)
                 hunters.add(hunter);

@@ -219,8 +219,7 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
         TrackEntry track = null;
         boolean skipCurrent = false;
         DistanceInfo di = getDistanceToRunner();
-        if (isFinale)
-        {
+        if (isFinale) {
             if (di.env == World.Environment.THE_END)
                 track = this.currentTrack;
             else
@@ -330,8 +329,8 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
 
     private DistanceInfo getDistanceToRunner()
     {
-        ArrayList<Player> hunters = this.mhMgr.getTeamPlayers(0);
-        ArrayList<Player> runners = this.mhMgr.getTeamPlayers(1);
+        ArrayList<Player> hunters = this.mhMgr.getTeamPlayers(ManhuntTeam.Hunters);
+        ArrayList<Player> runners = this.mhMgr.getTeamPlayers(ManhuntTeam.Runners);
 
         DistanceInfo info = new DistanceInfo();
         info.distance = Double.MAX_VALUE;
@@ -396,7 +395,7 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
         if (this.currentTrack.trackName.equals("mh_start"))
         {
             Player player = event.getPlayer();
-            if (this.mhMgr.getPlayerInTeam(player, 1))
+            if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Runners))
                 if (event.getBlock().getType() == Material.IRON_ORE)
                     skipTrack();
         }
@@ -410,11 +409,11 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
         Player player = event.getEntity();
         int pTeamID = this.mhMgr.getPlayerTeam(player);
         switch (pTeamID) {
-            case 0:
+            case ManhuntTeam.Hunters:
                 killer = player.getKiller();
                 hunterKilledByRunner = false;
                 if (killer != null)
-                    if (this.mhMgr.getPlayerInTeam(killer, 1))
+                    if (this.mhMgr.getPlayerInTeam(killer, ManhuntTeam.Runners))
                         hunterKilledByRunner = true;
                 if (hunterKilledByRunner) {
                     startHunterDeathTrack(this.specialTracks[2]); // mh_hunterDeathByRunner | no wait
@@ -422,7 +421,7 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
                 }
                 startHunterDeathTrack(this.specialTracks[0]); // mh_hunterDeath | no wait
                 break;
-            case 1:
+            case ManhuntTeam.Runners:
                 startSpecialTrack(this.specialTracks[1]); // mh_runnerDeath | no wait
                 break;
         }

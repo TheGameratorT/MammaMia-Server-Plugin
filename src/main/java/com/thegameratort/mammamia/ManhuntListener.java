@@ -40,11 +40,12 @@ public class ManhuntListener implements Listener
         Player player = event.getPlayer();
         if (player.getInventory().getItemInMainHand().getType() == Material.COMPASS)
         {
-            if (!this.mhMgr.getPlayerInTeam(player, 0))
+            if (!this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters))
                 return;
 
             Inventory inv = Bukkit.createInventory(null, 9, "Select a player to track");
-            for (Player runner : this.mhMgr.getTeamPlayers(1)) {
+            for (Player runner : this.mhMgr.getTeamPlayers(ManhuntTeam.Runners))
+            {
                 ItemStack stack = new ItemStack(Material.PLAYER_HEAD, 1);
                 SkullMeta meta = (SkullMeta)stack.getItemMeta();
                 meta.setOwningPlayer(runner);
@@ -77,7 +78,8 @@ public class ManhuntListener implements Listener
             return;
 
         ItemMeta imeta = item.getItemMeta();
-        if (!(imeta instanceof SkullMeta)) {
+        if (!(imeta instanceof SkullMeta))
+        {
             event.setCancelled(true);
             return;
         }
@@ -86,10 +88,13 @@ public class ManhuntListener implements Listener
         OfflinePlayer runner = smeta.getOwningPlayer();
         String runnerName = runner.getName();
 
-        if (runner instanceof Player) {
+        if (runner instanceof Player)
+        {
             this.mhMgr.setHunterTarget(hunter, (Player)runner, this.mhMgr.getPlayerCompass(hunter));
             hunter.sendMessage("Compass is now tracking " + runnerName);
-        } else {
+        }
+        else
+        {
             hunter.sendMessage("That player who you call " + runnerName + " is a ghost.");
         }
 
@@ -102,18 +107,18 @@ public class ManhuntListener implements Listener
     {
         Player player = event.getPlayer();
         Material material = event.getItemDrop().getItemStack().getType();
-        if (this.mhMgr.getPlayerInTeam(player, 0) && material == Material.COMPASS) {
+        if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters) && material == Material.COMPASS)
             event.setCancelled(true);
-        }
     }
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event)
     {
         Player runner = event.getPlayer();
-        if (!this.mhMgr.getPlayerInTeam(runner, 1))
+        if (!this.mhMgr.getPlayerInTeam(runner, ManhuntTeam.Runners))
             return;
-        for (Player hunter : this.mhMgr.getTeamPlayers(0)) {
+        for (Player hunter : this.mhMgr.getTeamPlayers(ManhuntTeam.Hunters))
+        {
             if (runner == this.mhMgr.getHunterTarget(hunter))
                 this.mhMgr.updateCompassTarget(hunter, runner);
         }
@@ -123,7 +128,7 @@ public class ManhuntListener implements Listener
     public void onPlayerRespawn(PlayerRespawnEvent event)
     {
         Player player = event.getPlayer();
-        if (this.mhMgr.getPlayerInTeam(player, 0))
+        if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters))
         {
             Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
                 this.mhMgr.giveHunterCompass(player, this.mhMgr.getHunterTarget(player));
@@ -144,7 +149,7 @@ public class ManhuntListener implements Listener
             int teamID = this.mhMgr.getPlayerTeam(p);
             switch(teamID)
             {
-                case 0:
+                case ManhuntTeam.Hunters:
                     Player runner = this.mhMgr.getHunterTarget(p);
                     if (runner != null)
                     {
@@ -160,7 +165,7 @@ public class ManhuntListener implements Listener
                         }
                     }
                     break;
-                case 1:
+                case ManhuntTeam.Runners:
                     for (Player hunter : this.mhMgr.getRunnerHunters(p)) {
                         if (dw != hunter.getWorld())
                             hunter.sendActionBar("Your target left your dimension.");
@@ -169,11 +174,10 @@ public class ManhuntListener implements Listener
             }
         }
 
-        if (dn.equals("manhunt_nether")) {
+        if (dn.equals("manhunt_nether"))
             this.mhMgr.awardPlayerAdvancement(p, "story/enter_the_nether");
-        } else if (dn.equals("manhunt_the_end")) {
+        else if (dn.equals("manhunt_the_end"))
             this.mhMgr.awardPlayerAdvancement(p, "story/enter_the_end");
-        }
     }
 
     @EventHandler
@@ -181,15 +185,18 @@ public class ManhuntListener implements Listener
     {
         Player player = event.getEntity();
         int teamID = this.mhMgr.getPlayerTeam(player);
-        switch (teamID) {
-            case 0:
+        switch (teamID)
+        {
+            case ManhuntTeam.Hunters:
                 event.getDrops().removeIf(i -> (i.getType() == Material.COMPASS));
                 break;
-            case 1:
+            case ManhuntTeam.Runners:
                 for (Player hunter : this.mhMgr.getRunnerHunters(player))
                     this.mhMgr.removeHunterTarget(hunter);
                 player.setGameMode(GameMode.SPECTATOR);
-                Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> this.mhMgr.setPlayerTeam(player, teamID, 2), 1);
+                Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
+                    this.mhMgr.setPlayerTeam(player, teamID, ManhuntTeam.Spectators);
+                }, 1);
                 break;
         }
     }

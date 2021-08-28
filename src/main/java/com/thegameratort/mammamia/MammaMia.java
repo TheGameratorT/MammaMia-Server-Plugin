@@ -2,12 +2,8 @@ package com.thegameratort.mammamia;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.multiverseinventories.MultiverseInventories;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.*;
 
 public final class MammaMia extends JavaPlugin
 {
