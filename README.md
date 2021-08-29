@@ -3,9 +3,9 @@ The Mamma Mia server controller plugin.
 
 ### Requirements
 - Bukkit/Spigot/Paper 1.16.5 Server
-- Multiverse-Core (4.2.2)
-- Multiverse-Inventories (4.2.1)
-- Multiverse-NetherPortals (4.2.1)
+- [Multiverse Core](https://dev.bukkit.org/projects/multiverse-core) (4.2.2)
+- [Multiverse Inventories](https://dev.bukkit.org/projects/multiverse-inventories) (4.2.1)
+- [Multiverse NetherPortals](https://dev.bukkit.org/projects/multiverse-netherportals/) (4.2.1)
 
 Version in parentheses is the last known working version.
 
@@ -59,7 +59,7 @@ The `mv.bypass.gamemode.manhunt*` permissions are required for all players, othe
 
 To setup the loading screen, create an anchor with multiverse named `loading_screen`.\
 You can use the command `mvanchor loading_screen` while facing where you want the loading screen to be at.\
-After that, create an invisible armor stand for where the player will be facing the loading screen with the name `load_spect`.
+After that, create an invisible armor stand for where the player will be facing the loading screen with the name `load_spect`.\
 You can use the command `summon minecraft:armor_stand ~ ~ ~ {CustomName:"load_spect",Invisible:1b}`.
 
 Example:
@@ -110,3 +110,7 @@ Available manhunt teams:
  - hunters
  - runners
  - spectators
+
+### Credits
+ - Plugin by TheGameratorT
+ - [LavaPlayer](https://github.com/sedmelluq/lavaplayer) by sedmelluq
