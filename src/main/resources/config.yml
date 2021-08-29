@@ -13,3 +13,32 @@ discord:
   botStatus:
   guildID:
   voiceID:
+
+tracks:
+  mh_start: https://youtu.be/tJFqdLg58i4
+  mh_calm1: https://youtu.be/16EnDeafG7k
+  mh_calm2: https://youtu.be/gehk17hjEdU
+  mh_calm3: https://youtu.be/0NS60gDQ-5g
+  mh_calm4: https://youtu.be/wlRkXTqy5Ng
+  mh_danger1: https://youtu.be/ghAeHHTID2k
+  mh_danger2: https://youtu.be/XilzvgiKmoM
+  mh_danger3: https://youtu.be/UZ7OcaFTiA4
+  mh_danger4: https://youtu.be/WJ2q6_4yF2Q
+  mh_tenseMax: https://youtu.be/kVJQ74RoHCM
+  mh_tenseMed: clock_ticking_BennyHawes.opus
+  mh_tenseMin: dark_time_ticking_RobertValenti.opus
+  mh_fight: https://youtu.be/dy-9UZ1J8Dw
+  mh_netherFightEnd: behind_you_1.opus
+  mh_netherFightLoop: behind_you_2.opus
+  mh_netherFightStart: behind_you_3.opus
+  mh_netherTenseLoop: behind_you_4.opus
+  mh_netherTenseStart: behind_you_5.opus
+  mh_end: https://youtu.be/uZTkg8GGEOo
+  mh_finale: https://youtu.be/rQUXUdD3B-4
+  mh_hunterDeath: hunter_death.opus
+  mh_runnerDeath: pingas.opus
+  mh_hunterDeathByRunner: ohhh_get_the_camera.opus
+  ch_orgasm1: ch_orgasm-01.opus
+  ch_orgasm2: ch_orgasm-02.opus
+  ch_orgasm3: ch_orgasm-03.opus
+  ch_orgasm4: ch_orgasm-04.opus
