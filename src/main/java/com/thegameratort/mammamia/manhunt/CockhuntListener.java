@@ -1,8 +1,6 @@
-package com.thegameratort.mammamia;
+package com.thegameratort.mammamia.manhunt;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
+import com.thegameratort.mammamia.MammaMia;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -13,6 +11,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
 public class CockhuntListener implements Listener
 {
@@ -26,35 +28,29 @@ public class CockhuntListener implements Listener
     private int updaterTaskID;
 
     private final String[] hunterCockMsg = {
-            "You have to catch him man, he is sus.",
-            "Seriously man, you suck at this game. Hurry up!",
-            "Go catch that pingas!",
-            "Bruh, you still didn't catch him? Loser.",
-            "Did you know that he drops a pingas? NOW GO!!!"
+        "You have to catch him man, he is sus.",
+        "Seriously man, you suck at this game. Hurry up!",
+        "Go catch that pingas!",
+        "Bruh, you still didn't catch him? Loser.",
+        "Did you know that he drops a pingas? NOW GO!!!"
     };
 
     private final String[] runnerCockMsg = {
-            "Remember that they want your pingas, so run away!",
-            "Faster man, go faster, or else they will get you.",
-            "RUN, YOU DON'T WANT THEM TO CATCH YOU, DO YOU?",
-            "You don't want to become an average fan do you?",
-            "Run away, they're coming for your pingas!"
+        "Remember that they want your pingas, so run away!",
+        "Faster man, go faster, or else they will get you.",
+        "RUN, YOU DON'T WANT THEM TO CATCH YOU, DO YOU?",
+        "You don't want to become an average fan do you?",
+        "Run away, they're coming for your pingas!"
     };
 
     private final String[] chatMsg = {
-            "amogus",
-            "sus",
-            "imposter",
-            "amogusus",
-            "'mogus",
-            "i'm gay",
-            "fric froc",
-            "pingas",
-            "banana",
-            "monke",
-            "what the dog doin",
-            "https://youtu.be/dQw4w9WgXcQ",
-            "hi call?"
+        "amogus", "sus", "imposter", "amogusus", "'mogus",
+        "i'm gay", "fric froc", "pingas", "banana", "monke",
+        "what the dog doin", "https://youtu.be/dQw4w9WgXcQ",
+        "hi call?", "whatsapp", "get real", "hopps",
+        "it's immune, not ignore", "i unknow the asm",
+        "your mum", "taco's mum", "Xdddddd", "Shit!",
+        "_ZN8Particle7Handler29runEmitterInitialVelocityAxisEmmRK4Vec3RK7VecFx16RKlRKsSA_PNS_14ControllerBaseE"
     };
 
     CockhuntListener(MammaMia plugin)

@@ -1,11 +1,8 @@
-package com.thegameratort.mammamia;
+package com.thegameratort.mammamia.manhunt;
 
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import java.util.ArrayList;
-import java.util.Random;
+import com.thegameratort.mammamia.MammaMia;
+import com.thegameratort.mammamia.track.TrackEventAdapter;
+import com.thegameratort.mammamia.track.TrackManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -19,7 +16,10 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 
-public class ManhuntTrackManager extends AudioEventAdapter implements Listener
+import java.util.ArrayList;
+import java.util.Random;
+
+public class ManhuntTrackManager extends TrackEventAdapter implements Listener
 {
     private final MammaMia plugin;
     private final ManhuntManager mhMgr;
@@ -71,46 +71,46 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
     private boolean isFinale = false;
 
     private final TrackEntry[] calmTracks = {
-            new TrackEntry("mh_calm1", true),
-            new TrackEntry("mh_calm2", true),
-            new TrackEntry("mh_calm3", true),
-            new TrackEntry("mh_calm4", true)
+        new TrackEntry("mh_calm1", true),
+        new TrackEntry("mh_calm2", true),
+        new TrackEntry("mh_calm3", true),
+        new TrackEntry("mh_calm4", true)
     };
 
     private final TrackEntry[] dangerTracks = {
-            new TrackEntry("mh_danger1", true),
-            new TrackEntry("mh_danger2", true),
-            new TrackEntry("mh_danger3", true),
-            new TrackEntry("mh_danger4", true)
+        new TrackEntry("mh_danger1", true),
+        new TrackEntry("mh_danger2", true),
+        new TrackEntry("mh_danger3", true),
+        new TrackEntry("mh_danger4", true)
     };
 
     private final TrackEntry[] netherTracks = {
-            new TrackEntry("mh_netherTenseStart", false),
-            new TrackEntry("mh_netherTenseLoop", true),
-            new TrackEntry("mh_netherFightStart", true),
-            new TrackEntry("mh_netherFightStart", false),
-            new TrackEntry("mh_netherFightLoop", true),
-            new TrackEntry("mh_netherFightEnd", true)
+        new TrackEntry("mh_netherTenseStart", false),
+        new TrackEntry("mh_netherTenseLoop", true),
+        new TrackEntry("mh_netherFightStart", true),
+        new TrackEntry("mh_netherFightStart", false),
+        new TrackEntry("mh_netherFightLoop", true),
+        new TrackEntry("mh_netherFightEnd", true)
     };
 
     private final TrackEntry[] tenseTracks = {
-            new TrackEntry("mh_tenseMax", true),
-            new TrackEntry("mh_tenseMed", false),
-            new TrackEntry("mh_tenseMin", false),
-            new TrackEntry("mh_tenseMin", true)
+        new TrackEntry("mh_tenseMax", true),
+        new TrackEntry("mh_tenseMed", false),
+        new TrackEntry("mh_tenseMin", false),
+        new TrackEntry("mh_tenseMin", true)
     };
 
     private final TrackEntry[] specialTracks = {
-            new TrackEntry("mh_hunterDeath", false),
-            new TrackEntry("mh_runnerDeath", false),
-            new TrackEntry("mh_hunterDeathByRunner", false)
+        new TrackEntry("mh_hunterDeath", false),
+        new TrackEntry("mh_runnerDeath", false),
+        new TrackEntry("mh_hunterDeathByRunner", false)
     };
 
     private final TrackEntry[] orgasmTracks = {
-            new TrackEntry("ch_orgasm1", false),
-            new TrackEntry("ch_orgasm2", false),
-            new TrackEntry("ch_orgasm4", false),
-            new TrackEntry("ch_orgasm3", false)
+        new TrackEntry("ch_orgasm1", false),
+        new TrackEntry("ch_orgasm2", false),
+        new TrackEntry("ch_orgasm4", false),
+        new TrackEntry("ch_orgasm3", false)
     };
 
     private final TrackEntry startTrack = new TrackEntry("mh_start", false);
@@ -122,7 +122,7 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
     {
         this.plugin = plugin;
         this.mhMgr = plugin.getMhMgr();
-        this.trackMgr = plugin.getDiscordMgr().getTrackMgr();
+        this.trackMgr = plugin.getTrackMgr();
     }
 
     public void start()
@@ -134,6 +134,7 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
 
     public void stop()
     {
+        this.stopTracks();
         HandlerList.unregisterAll(this);
         this.trackMgr.setListener(null);
         Bukkit.getScheduler().cancelTask(this.updaterTaskID);
@@ -148,9 +149,9 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
         this.plugin.getLogger().info("Next candidate: " + track.trackName + " | wait: " + track.playOnEnd);
     }
 
-    public void onTrackStart(AudioPlayer player, AudioTrack track) {}
+    //public void onTrackStart() {}
 
-    public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason)
+    public void onTrackEnd()
     {
         if (this.blockEndEvent) {
             this.blockEndEvent = false;
@@ -189,7 +190,7 @@ public class ManhuntTrackManager extends AudioEventAdapter implements Listener
     {
         if (this.isPlaying)
             this.blockEndEvent = true;
-        this.trackMgr.startTrack(track.trackName);
+        this.trackMgr.startTrack(track.trackName, 0);
         this.currentTrack = track.makeCopy();
         this.nextTrack = new TrackEntry();
         this.isPlaying = true;

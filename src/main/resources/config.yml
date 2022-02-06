@@ -1,12 +1,3 @@
-isStarted: false
-isCockhunt: false
-compassTracksOutsideOverworld: true
-alertWrongDimension: true
-
-huntersColor: c
-runnersColor: a
-spectatorsColor: b
-
 discord:
   enabled: false
   botToken:

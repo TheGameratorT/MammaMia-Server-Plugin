@@ -1,27 +1,20 @@
-package com.thegameratort.mammamia;
+package com.thegameratort.mammamia.manhunt;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import com.onarandombox.multiverseinventories.MultiverseInventories;
 import com.onarandombox.multiverseinventories.profile.container.ProfileContainer;
-
-import java.util.*;
-import javax.annotation.Nullable;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import com.thegameratort.mammamia.ConfigFile;
+import com.thegameratort.mammamia.DelayedExecutor;
+import com.thegameratort.mammamia.LoadingScreen;
+import com.thegameratort.mammamia.MammaMia;
+import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -33,13 +26,19 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Random;
+
 public class ManhuntManager
 {
     private final MammaMia plugin;
     private ManhuntListener listener = null;
     private CockhuntListener cockListener = null;
     private ManhuntTrackManager mhTrackMgr = null;
-    private final FileConfiguration config;
+    private final ConfigFile config;
     private final MultiverseCore mvCore;
     public Team[] teams = new Team[3];
     private final HashMap<String, String> targets = new HashMap<>();
@@ -47,29 +46,30 @@ public class ManhuntManager
     private final String[] teamNames = { "hunters", "runners", "spectators" };
     private boolean isStarted;
     private boolean isCockhunt;
+    private boolean isDebug = false;
     private final boolean compassTOO;
     private final boolean alertWrongDimension;
 
-    ManhuntManager(MammaMia plugin)
+    public ManhuntManager(MammaMia plugin)
     {
         this.plugin = plugin;
         this.mvCore = plugin.getMvCore();
-        plugin.setMhMgr(this);
 
-        this.config = plugin.getConfig();
-        this.isStarted = this.config.getBoolean("isStarted");
-        this.isCockhunt = this.config.getBoolean("isCockhunt");
-        this.compassTOO = this.config.getBoolean("compassTracksOutsideOverworld");
-        this.alertWrongDimension = this.config.getBoolean("alertWrongDimension");
+        this.config = ConfigFile.loadConfig(this.plugin, "manhunt.yml");
 
-        ConfigurationSection targetSec = this.config.getConfigurationSection("targets");
+        this.isStarted = config.getBoolean("started");
+        this.isCockhunt = config.getBoolean("cockhunt");
+        this.compassTOO = config.getBoolean("compassTracksOutsideOverworld");
+        this.alertWrongDimension = config.getBoolean("alertWrongDimension");
+
+        ConfigurationSection targetSec = config.getConfigurationSection("targets");
         if (targetSec != null)
         {
             for (String key : targetSec.getKeys(false))
                 this.targets.put(key, targetSec.getString(key));
         }
 
-        ConfigurationSection portalSec = this.config.getConfigurationSection("portals");
+        ConfigurationSection portalSec = config.getConfigurationSection("portals");
         if (portalSec != null)
         {
             for (String key : portalSec.getKeys(false))
@@ -85,7 +85,7 @@ public class ManhuntManager
             if (team == null)
             {
                 team = board.registerNewTeam(teamName);
-                String colorChar = plugin.getConfig().getString(teamName + "Color");
+                String colorChar = this.config.getString(teamName + "Color");
                 team.setColor(ChatColor.getByChar(colorChar));
             }
 
@@ -95,7 +95,7 @@ public class ManhuntManager
         if (this.isStarted)
             this.startListeners();
 
-        new ManhuntCommand(plugin);
+        new ManhuntCommand(plugin, this);
     }
 
     public void regen(CommandSender sender)
@@ -116,6 +116,7 @@ public class ManhuntManager
                 this.regenWorld(worldManager, "manhunt", seed);
                 this.regenWorld(worldManager, "manhunt_nether", seed);
                 this.regenWorld(worldManager, "manhunt_the_end", seed);
+
                 MultiverseInventories mvInv = this.plugin.getMvInv();
                 ProfileContainer manhuntInv = mvInv.getGroupManager().getGroup("manhunt").getGroupProfileContainer();
                 OfflinePlayer[] players = Bukkit.getOfflinePlayers();
@@ -155,19 +156,22 @@ public class ManhuntManager
             return false;
         }
 
-        int hunterCount = this.getTeamPlayers(ManhuntTeam.Hunters).size();
-        int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
-        if (hunterCount == 0 && runnerCount == 0) {
-            sender.sendMessage("Unable to start the Manhunt, no hunters nor runners found.");
-            return false;
-        }
-        if (hunterCount == 0) {
-            sender.sendMessage("Unable to start the Manhunt, no hunters found.");
-            return false;
-        }
-        if (runnerCount == 0) {
-            sender.sendMessage("Unable to start the Manhunt, no runners found.");
-            return false;
+        if (!this.isDebug)
+        {
+            int hunterCount = this.getTeamPlayers(ManhuntTeam.Hunters).size();
+            int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
+            if (hunterCount == 0 && runnerCount == 0) {
+                sender.sendMessage("Unable to start the Manhunt, no hunters nor runners found.");
+                return false;
+            }
+            if (hunterCount == 0) {
+                sender.sendMessage("Unable to start the Manhunt, no hunters found.");
+                return false;
+            }
+            if (runnerCount == 0) {
+                sender.sendMessage("Unable to start the Manhunt, no runners found.");
+                return false;
+            }
         }
 
         this.startListeners();
@@ -212,7 +216,7 @@ public class ManhuntManager
         this.portals.clear();
         this.config.set("targets", this.targets);
         this.config.set("portals", this.portals);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
         if (this.mhTrackMgr != null)
             this.mhTrackMgr.startStartTrack();
 
@@ -237,9 +241,6 @@ public class ManhuntManager
         }
 
         this.stopListeners();
-        TrackManager trackMgr = this.plugin.getDiscordMgr().getTrackMgr();
-        if (trackMgr != null)
-            trackMgr.stopTrack();
 
         sender.sendMessage("Manhunt is now stopped.");
         this.setStarted(false);
@@ -353,8 +354,22 @@ public class ManhuntManager
             sender.sendMessage("Cockhunt was enabled!");
             this.isCockhunt = true;
         }
-        this.config.set("isCockhunt", this.isCockhunt);
-        this.plugin.saveConfig();
+        this.config.set("cockhunt", this.isCockhunt);
+        this.config.saveConfig();
+    }
+
+    public void toggleDebug(CommandSender sender)
+    {
+        if (this.isDebug)
+        {
+            sender.sendMessage("Debug was disabled!");
+            this.isDebug = false;
+        }
+        else
+        {
+            sender.sendMessage("Debug was enabled!");
+            this.isDebug = true;
+        }
     }
 
     public void updateCompassTarget(Player hunter, Player runner)
@@ -409,7 +424,7 @@ public class ManhuntManager
     {
         this.portals.put(runnerName, portalLocation);
         this.config.set("portals", this.portals);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
     }
 
     public Location getRunnerPortal(String runnerName)
@@ -421,7 +436,7 @@ public class ManhuntManager
     {
         this.targets.put(hunter.getName(), runner.getName());
         this.config.set("targets", this.targets);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
 
         if (compass != null)
         {
@@ -437,7 +452,7 @@ public class ManhuntManager
     {
         this.targets.remove(hunter.getName());
         this.config.set("targets", this.targets);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
 
         ItemStack compass = this.getPlayerCompass(hunter);
         if (compass != null) {
@@ -568,8 +583,8 @@ public class ManhuntManager
     private void setStarted(boolean flag)
     {
         this.isStarted = flag;
-        this.config.set("isStarted", flag);
-        this.plugin.saveConfig();
+        this.config.set("started", flag);
+        this.config.saveConfig();
     }
 
     public boolean getCockhunt()
@@ -596,7 +611,7 @@ public class ManhuntManager
             this.cockListener = new CockhuntListener(this.plugin);
             this.cockListener.start();
         }
-        if (this.plugin.getDiscordMgr().getTrackMgr() != null)
+        if (this.plugin.getTrackMgr() != null /* TODO: THIS CHECK MUST BE UPDATED */)
         {
             this.mhTrackMgr = new ManhuntTrackManager(this.plugin);
             this.mhTrackMgr.start();
