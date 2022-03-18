@@ -53,10 +53,10 @@ public class CockhuntListener implements Listener
         "_ZN8Particle7Handler29runEmitterInitialVelocityAxisEmmRK4Vec3RK7VecFx16RKlRKsSA_PNS_14ControllerBaseE"
     };
 
-    CockhuntListener(MammaMia plugin)
+    CockhuntListener(MammaMia plugin, ManhuntManager mhMgr)
     {
         this.plugin = plugin;
-        this.mhMgr = plugin.getMhMgr();
+        this.mhMgr = mhMgr;
     }
 
     void start()
