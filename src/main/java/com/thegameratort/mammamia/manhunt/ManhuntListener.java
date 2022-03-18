@@ -22,10 +22,10 @@ public class ManhuntListener implements Listener
     private final ManhuntManager mhMgr;
     private final ArrayList<Inventory> invs = new ArrayList<>();
 
-    ManhuntListener(MammaMia plugin)
+    ManhuntListener(MammaMia plugin, ManhuntManager mhMgr)
     {
         this.plugin = plugin;
-        this.mhMgr = plugin.getMhMgr();
+        this.mhMgr = mhMgr;
     }
 
     @EventHandler

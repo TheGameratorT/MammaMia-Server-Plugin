@@ -37,18 +37,23 @@ public class LoadingScreen
         Entity armorStand = this.getArmorStand(location.getWorld());
 
         for (Player player : players) {
+            respawnIfDead(player);
             this.plugin.getMvCore().getSafeTTeleporter().safelyTeleport(Bukkit.getConsoleSender(), player, location, false);
         }
 
         Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
-            for (Player player : this.players) {
-                player.setGameMode(GameMode.SPECTATOR);
-                if (armorStand != null) {
-                    int taskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, () -> {
-                        player.setSpectatorTarget(armorStand);
-                    }, 0L, 1L);
-                    this.taskIDs.add(taskID);
-                }
+            if (armorStand != null) {
+                int taskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, () -> {
+                    for (Player player : this.players) {
+                        if (player.isOnline()) {
+                            respawnIfDead(player);
+                            if (player.getGameMode() != GameMode.SPECTATOR)
+                                player.setGameMode(GameMode.SPECTATOR);
+                            player.setSpectatorTarget(armorStand);
+                        }
+                    }
+                }, 0L, 1L);
+                this.taskIDs.add(taskID);
             }
 
             if (afterShow != null) {
@@ -75,5 +80,11 @@ public class LoadingScreen
                 return entity;
         }
         return null;
+    }
+
+    private static void respawnIfDead(Player player)
+    {
+        if (player.isDead())
+            player.spigot().respawn();
     }
 }

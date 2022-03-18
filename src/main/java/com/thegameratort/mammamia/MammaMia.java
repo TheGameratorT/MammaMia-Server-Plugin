@@ -49,7 +49,7 @@ public final class MammaMia extends JavaPlugin {
 
         this.saveDefaultConfig();
 
-        new LabyModListener(this);
+        //new LabyModListener(this);
 
         this.trackMgr = new TrackManager(this);
         this.discordMgr = new DiscordManager(this);

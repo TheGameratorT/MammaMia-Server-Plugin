@@ -604,7 +604,7 @@ public class ManhuntManager
 
     private void startListeners()
     {
-        this.listener = new ManhuntListener(this.plugin);
+        this.listener = new ManhuntListener(this.plugin, this);
         this.plugin.getServer().getPluginManager().registerEvents(this.listener, this.plugin);
         if (this.isCockhunt)
         {
@@ -613,7 +613,7 @@ public class ManhuntManager
         }
         if (this.plugin.getTrackMgr() != null /* TODO: THIS CHECK MUST BE UPDATED */)
         {
-            this.mhTrackMgr = new ManhuntTrackManager(this.plugin);
+            this.mhTrackMgr = new ManhuntTrackManager(this.plugin, this);
             this.mhTrackMgr.start();
         }
     }

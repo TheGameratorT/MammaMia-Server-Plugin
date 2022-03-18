@@ -68,7 +68,9 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     private TrackEntry currentTrack = new TrackEntry();
     private TrackEntry nextTrack = new TrackEntry();
     private final ArrayList<String> rngOrgasms = new ArrayList<>();
+    private final ArrayList<String> rngTrolls = new ArrayList<>();
     private boolean isFinale = false;
+    private boolean rngIsFeelingExcited = false;
 
     private final TrackEntry[] calmTracks = {
         new TrackEntry("mh_calm1", true),
@@ -109,8 +111,14 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     private final TrackEntry[] orgasmTracks = {
         new TrackEntry("ch_orgasm1", false),
         new TrackEntry("ch_orgasm2", false),
-        new TrackEntry("ch_orgasm4", false),
-        new TrackEntry("ch_orgasm3", false)
+        new TrackEntry("ch_orgasm3", false),
+        new TrackEntry("ch_orgasm4", false)
+    };
+
+    private final TrackEntry[] trollTracks = {
+        new TrackEntry("ch_troll1", false),
+        new TrackEntry("ch_troll2", false),
+        new TrackEntry("ch_troll3", false)
     };
 
     private final TrackEntry startTrack = new TrackEntry("mh_start", false);
@@ -118,10 +126,10 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     private final TrackEntry endTrack = new TrackEntry("mh_end", false);
     private final TrackEntry finaleTrack = new TrackEntry("mh_finale", false);
 
-    ManhuntTrackManager(MammaMia plugin)
+    ManhuntTrackManager(MammaMia plugin, ManhuntManager mhMgr)
     {
         this.plugin = plugin;
-        this.mhMgr = plugin.getMhMgr();
+        this.mhMgr = mhMgr;
         this.trackMgr = plugin.getTrackMgr();
     }
 
@@ -240,14 +248,17 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                         track = this.currentTrack;
                     break;
                 case "mh_tenseMed":
-                    if (di.distance < 25)
+                    if (di.distance < 10)
                         track = this.fightTrack; // mh_fight | no wait
                     else if (di.distance < 200)
                         track = this.tenseTracks[0]; // mh_tenseMax | wait
                     else if (di.distance < 300)
                         track = this.tenseTracks[3]; // mh_tenseMin | wait
                 case "mh_tenseMin":
-                    if (di.distance >= 300)
+                    // track starts at 300 blocks, but only
+                    // force stops at 500 blocks, otherwise
+                    // wait for track to end
+                    if (di.distance >= 500)
                         skipCurrent = true;
                     break;
                 case "mh_netherTenseStart":
@@ -273,7 +284,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         if (track == null) {
             switch (di.env) {
                 case NORMAL:
-                    if (di.distance < 25) {
+                    if (di.distance < 10) {
                         track = this.fightTrack; // mh_fight | no wait
                         break;
                     }
@@ -370,7 +381,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
 
     private void startHunterDeathTrack(TrackEntry track)
     {
-        if (!isFinale)
+        if (!this.isFinale)
             startSpecialTrack(track);
     }
 
@@ -382,14 +393,11 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
             int rng = this.random.nextInt(1000);
             if (rng == 0)
             {
-                TrackEntry track;
-                if (this.rngOrgasms.size() >= this.orgasmTracks.length)
-                    this.rngOrgasms.clear();
-                do {
-                    track = this.orgasmTracks[this.random.nextInt(this.orgasmTracks.length)];
-                } while (this.rngOrgasms.contains(track.trackName));
-                this.rngOrgasms.add(track.trackName);
-                startSpecialTrack(track);
+                if (this.rngIsFeelingExcited)
+                    this.playSomeTrollRngTrack(this.orgasmTracks, this.rngOrgasms);
+                else
+                    this.playSomeTrollRngTrack(this.trollTracks, this.rngTrolls);
+                this.rngIsFeelingExcited = !this.rngIsFeelingExcited;
             }
         }
 
@@ -400,6 +408,18 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                 if (event.getBlock().getType() == Material.IRON_ORE)
                     skipTrack();
         }
+    }
+
+    private void playSomeTrollRngTrack(TrackEntry[] tracks, ArrayList<String> rngTracks)
+    {
+        TrackEntry track;
+        if (rngTracks.size() >= tracks.length)
+            rngTracks.clear();
+        do {
+            track = tracks[this.random.nextInt(tracks.length)];
+        } while (rngTracks.contains(track.trackName));
+        rngTracks.add(track.trackName);
+        startSpecialTrack(track);
     }
 
     @EventHandler
