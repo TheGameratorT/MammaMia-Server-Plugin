@@ -203,14 +203,14 @@ public class ManhuntManager
             {
                 case ManhuntTeam.Hunters -> {
                     if (this.isCockhunt)
-                        player.sendTitle("Run as fast as possible!", "They want your pingas...", 10, 70, 20);
-                    if (runnerCount > 1)
-                        this.giveTrackingCompass(player, null);
+                        player.sendMessage("GO GET THAT PINGAS! :>");
+                    this.giveTrackingCompass(player, null);
                 }
                 case ManhuntTeam.Runners -> {
                     if (this.isCockhunt)
-                        player.sendMessage("GO GET THAT PINGAS! :>");
-                    this.giveTrackingCompass(player, null);
+                        player.sendTitle("Run as fast as possible!", "They want your pingas...", 10, 70, 20);
+                    if (runnerCount > 1)
+                        this.giveTrackingCompass(player, null);
                 }
                 case ManhuntTeam.Spectators -> {
                     player.setGameMode(GameMode.SPECTATOR);
