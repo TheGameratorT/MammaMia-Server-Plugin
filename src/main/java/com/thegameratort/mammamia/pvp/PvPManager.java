@@ -2,7 +2,6 @@ package com.thegameratort.mammamia.pvp;
 
 import com.fastasyncworldedit.core.FaweAPI;
 import com.fastasyncworldedit.core.extent.processor.lighting.RelightMode;
-import com.fastasyncworldedit.core.util.EditSessionBuilder;
 import com.fastasyncworldedit.core.util.TaskManager;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.SafeTTeleporter;
@@ -10,6 +9,7 @@ import com.onarandombox.multiverseinventories.MultiverseInventories;
 import com.onarandombox.multiverseinventories.profile.container.ProfileContainer;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.entity.Entity;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operations;
@@ -131,17 +131,17 @@ public class PvPManager {
         game.arenaMinPos = new Vector(arenaMinToPosX, arenaMinToPosY, arenaMinToPosZ);
         game.arenaMaxPos = new Vector(arenaMaxToPosX, arenaMaxToPosY, arenaMaxToPosZ);
 
-        TaskManager.IMP.async(() -> {
+        TaskManager.taskManager().async(() -> {
             synchronized (PvPManager.class) {
                 World world = FaweAPI.getWorld(worldForEnv.get(arena.env));
 
-                EditSession editSession = new EditSessionBuilder(world)
-                        .autoQueue(false)
+                EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder()
+                        .world(world)
                         .checkMemory(false)
                         .allowedRegionsEverywhere()
                         .limitUnlimited()
                         .changeSetNull()
-                        .fastmode(true)
+                        .fastMode(true)
                         .build();
 
                 Region region = new CuboidRegion(arenaMinPos, arenaMaxPos);
@@ -157,8 +157,8 @@ public class PvPManager {
 
                 FaweAPI.fixLighting(world, region, null, RelightMode.OPTIMAL);
 
-                TaskManager.IMP.task(() -> {
-                    TaskManager.IMP.sync(() -> {
+                TaskManager.taskManager().task(() -> {
+                    TaskManager.taskManager().sync(() -> {
                         Region arenaToRegion = new CuboidRegion(arenaMinToPos, arenaMaxToPos);
                         removeEntitiesInRegion(world, arenaToRegion);
                         return true;
@@ -170,13 +170,13 @@ public class PvPManager {
     }
 
     private void removeEntitiesInRegion(World world, Region region) {
-        EditSession editSession = new EditSessionBuilder(world)
-                .autoQueue(false)
+        EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder()
+                .world(world)
                 .checkMemory(false)
                 .allowedRegionsEverywhere()
                 .limitUnlimited()
                 .changeSetNull()
-                .fastmode(true)
+                .fastMode(true)
                 .build();
 
         List<? extends Entity> entities = editSession.getEntities(region);
