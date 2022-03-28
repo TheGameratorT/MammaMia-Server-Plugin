@@ -1,4 +1,4 @@
-package com.thegameratort.mammamia;
+package com.thegameratort.mammamia.manhunt;
 
 public class ManhuntTeam
 {

@@ -1,27 +1,20 @@
-package com.thegameratort.mammamia;
+package com.thegameratort.mammamia.manhunt;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import com.onarandombox.multiverseinventories.MultiverseInventories;
 import com.onarandombox.multiverseinventories.profile.container.ProfileContainer;
-
-import java.util.*;
-import javax.annotation.Nullable;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import com.thegameratort.mammamia.ConfigFile;
+import com.thegameratort.mammamia.DelayedExecutor;
+import com.thegameratort.mammamia.LoadingScreen;
+import com.thegameratort.mammamia.MammaMia;
+import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -33,13 +26,19 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Random;
+
 public class ManhuntManager
 {
     private final MammaMia plugin;
     private ManhuntListener listener = null;
     private CockhuntListener cockListener = null;
     private ManhuntTrackManager mhTrackMgr = null;
-    private final FileConfiguration config;
+    private final ConfigFile config;
     private final MultiverseCore mvCore;
     public Team[] teams = new Team[3];
     private final HashMap<String, String> targets = new HashMap<>();
@@ -47,29 +46,30 @@ public class ManhuntManager
     private final String[] teamNames = { "hunters", "runners", "spectators" };
     private boolean isStarted;
     private boolean isCockhunt;
+    private boolean isDebug = false;
     private final boolean compassTOO;
     private final boolean alertWrongDimension;
 
-    ManhuntManager(MammaMia plugin)
+    public ManhuntManager(MammaMia plugin)
     {
         this.plugin = plugin;
         this.mvCore = plugin.getMvCore();
-        plugin.setMhMgr(this);
 
-        this.config = plugin.getConfig();
-        this.isStarted = this.config.getBoolean("isStarted");
-        this.isCockhunt = this.config.getBoolean("isCockhunt");
-        this.compassTOO = this.config.getBoolean("compassTracksOutsideOverworld");
-        this.alertWrongDimension = this.config.getBoolean("alertWrongDimension");
+        this.config = ConfigFile.loadConfig(this.plugin, "manhunt.yml");
 
-        ConfigurationSection targetSec = this.config.getConfigurationSection("targets");
+        this.isStarted = config.getBoolean("started");
+        this.isCockhunt = config.getBoolean("cockhunt");
+        this.compassTOO = config.getBoolean("compassTracksOutsideOverworld");
+        this.alertWrongDimension = config.getBoolean("alertWrongDimension");
+
+        ConfigurationSection targetSec = config.getConfigurationSection("targets");
         if (targetSec != null)
         {
             for (String key : targetSec.getKeys(false))
                 this.targets.put(key, targetSec.getString(key));
         }
 
-        ConfigurationSection portalSec = this.config.getConfigurationSection("portals");
+        ConfigurationSection portalSec = config.getConfigurationSection("portals");
         if (portalSec != null)
         {
             for (String key : portalSec.getKeys(false))
@@ -85,8 +85,7 @@ public class ManhuntManager
             if (team == null)
             {
                 team = board.registerNewTeam(teamName);
-                String colorChar = plugin.getConfig().getString(teamName + "Color");
-                team.setColor(ChatColor.getByChar(colorChar));
+                team.setColor(this.getTeamColor(i));
             }
 
             this.teams[i] = team;
@@ -95,7 +94,7 @@ public class ManhuntManager
         if (this.isStarted)
             this.startListeners();
 
-        new ManhuntCommand(plugin);
+        new ManhuntCommand(plugin, this);
     }
 
     public void regen(CommandSender sender)
@@ -116,6 +115,7 @@ public class ManhuntManager
                 this.regenWorld(worldManager, "manhunt", seed);
                 this.regenWorld(worldManager, "manhunt_nether", seed);
                 this.regenWorld(worldManager, "manhunt_the_end", seed);
+
                 MultiverseInventories mvInv = this.plugin.getMvInv();
                 ProfileContainer manhuntInv = mvInv.getGroupManager().getGroup("manhunt").getGroupProfileContainer();
                 OfflinePlayer[] players = Bukkit.getOfflinePlayers();
@@ -155,19 +155,22 @@ public class ManhuntManager
             return false;
         }
 
-        int hunterCount = this.getTeamPlayers(ManhuntTeam.Hunters).size();
-        int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
-        if (hunterCount == 0 && runnerCount == 0) {
-            sender.sendMessage("Unable to start the Manhunt, no hunters nor runners found.");
-            return false;
-        }
-        if (hunterCount == 0) {
-            sender.sendMessage("Unable to start the Manhunt, no hunters found.");
-            return false;
-        }
-        if (runnerCount == 0) {
-            sender.sendMessage("Unable to start the Manhunt, no runners found.");
-            return false;
+        if (!this.isDebug)
+        {
+            int hunterCount = this.getTeamPlayers(ManhuntTeam.Hunters).size();
+            int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
+            if (hunterCount == 0 && runnerCount == 0) {
+                sender.sendMessage("Unable to start the Manhunt, no hunters nor runners found.");
+                return false;
+            }
+            if (hunterCount == 0) {
+                sender.sendMessage("Unable to start the Manhunt, no hunters found.");
+                return false;
+            }
+            if (runnerCount == 0) {
+                sender.sendMessage("Unable to start the Manhunt, no runners found.");
+                return false;
+            }
         }
 
         this.startListeners();
@@ -192,27 +195,34 @@ public class ManhuntManager
             this.revokePlayerAdvancements(player);
         }
 
-        if (this.isCockhunt)
+        int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
+        for (Player player : this.getParticipants())
         {
-            for (Player runner : this.getTeamPlayers(ManhuntTeam.Runners))
-                runner.sendTitle("Run as fast as possible!", "They want your pingas...", 10, 70, 20);
+            int teamID = this.getPlayerTeam(player);
+            switch (teamID)
+            {
+                case ManhuntTeam.Hunters -> {
+                    if (this.isCockhunt)
+                        player.sendMessage("GO GET THAT PINGAS! :>");
+                    this.giveTrackingCompass(player, null);
+                }
+                case ManhuntTeam.Runners -> {
+                    if (this.isCockhunt)
+                        player.sendTitle("Run as fast as possible!", "They want your pingas...", 10, 70, 20);
+                    if (runnerCount > 1)
+                        this.giveTrackingCompass(player, null);
+                }
+                case ManhuntTeam.Spectators -> {
+                    player.setGameMode(GameMode.SPECTATOR);
+                }
+            }
         }
-
-        for (Player hunter : this.getTeamPlayers(ManhuntTeam.Hunters))
-        {
-            if (this.isCockhunt)
-                hunter.sendMessage("GO GET THAT PINGAS! :>");
-            this.giveHunterCompass(hunter, null);
-        }
-
-        for (Player player : getTeamPlayers(ManhuntTeam.Spectators))
-            player.setGameMode(GameMode.SPECTATOR);
 
         this.targets.clear();
         this.portals.clear();
         this.config.set("targets", this.targets);
         this.config.set("portals", this.portals);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
         if (this.mhTrackMgr != null)
             this.mhTrackMgr.startStartTrack();
 
@@ -237,9 +247,6 @@ public class ManhuntManager
         }
 
         this.stopListeners();
-        TrackManager trackMgr = this.plugin.getDiscordMgr().getTrackMgr();
-        if (trackMgr != null)
-            trackMgr.stopTrack();
 
         sender.sendMessage("Manhunt is now stopped.");
         this.setStarted(false);
@@ -353,37 +360,51 @@ public class ManhuntManager
             sender.sendMessage("Cockhunt was enabled!");
             this.isCockhunt = true;
         }
-        this.config.set("isCockhunt", this.isCockhunt);
-        this.plugin.saveConfig();
+        this.config.set("cockhunt", this.isCockhunt);
+        this.config.saveConfig();
     }
 
-    public void updateCompassTarget(Player hunter, Player runner)
+    public void toggleDebug(CommandSender sender)
     {
-        ItemStack compass = this.getPlayerCompass(hunter);
-        if (compass == null)
-            return;
-
-        if (hunter.getWorld() == runner.getWorld())
+        if (this.isDebug)
         {
-            this.setCompassTarget(hunter, runner.getLocation(), compass);
+            sender.sendMessage("Debug was disabled!");
+            this.isDebug = false;
         }
         else
         {
-            Location loc = this.getRunnerPortal(runner.getName());
+            sender.sendMessage("Debug was enabled!");
+            this.isDebug = true;
+        }
+    }
+
+    public void updateCompassTarget(Player player, Player target)
+    {
+        ItemStack compass = this.getPlayerCompass(player);
+        if (compass == null)
+            return;
+
+        if (player.getWorld() == target.getWorld())
+        {
+            this.setCompassTarget(player, target.getLocation(), compass);
+        }
+        else
+        {
+            Location loc = this.getRunnerPortal(target.getName());
             if (loc == null) {
                 return;
             }
 
-            this.setCompassTarget(hunter, loc, compass);
+            this.setCompassTarget(player, loc, compass);
         }
     }
 
-    public void setCompassTarget(Player hunter, Location targetLoc, ItemStack compass)
+    public void setCompassTarget(Player player, Location targetLoc, ItemStack compass)
     {
-        hunter.setCompassTarget(targetLoc);
+        player.setCompassTarget(targetLoc);
         if (this.compassTOO) {
             CompassMeta meta = (CompassMeta)compass.getItemMeta();
-            if (hunter.getWorld().getEnvironment() != Environment.NORMAL)
+            if (player.getWorld().getEnvironment() != Environment.NORMAL)
                 meta.setLodestone(targetLoc);
             else
                 meta.setLodestone(null);
@@ -409,7 +430,7 @@ public class ManhuntManager
     {
         this.portals.put(runnerName, portalLocation);
         this.config.set("portals", this.portals);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
     }
 
     public Location getRunnerPortal(String runnerName)
@@ -417,29 +438,29 @@ public class ManhuntManager
         return this.portals.get(runnerName);
     }
 
-    public void setHunterTarget(Player hunter, Player runner, @Nullable ItemStack compass)
+    public void setPlayerTarget(Player player, Player target, @Nullable ItemStack compass)
     {
-        this.targets.put(hunter.getName(), runner.getName());
+        this.targets.put(player.getName(), target.getName());
         this.config.set("targets", this.targets);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
 
         if (compass != null)
         {
             ItemMeta meta = compass.getItemMeta();
-            meta.setDisplayName("Tracking: " + runner.getName());
+            meta.setDisplayName("Tracking: " + target.getName());
             compass.setItemMeta(meta);
             compass.addUnsafeEnchantment(Enchantment.MENDING, 1);
-            this.updateCompassTarget(hunter, runner);
+            this.updateCompassTarget(player, target);
         }
     }
 
-    public void removeHunterTarget(Player hunter)
+    public void clearPlayerTarget(Player player)
     {
-        this.targets.remove(hunter.getName());
+        this.targets.remove(player.getName());
         this.config.set("targets", this.targets);
-        this.plugin.saveConfig();
+        this.config.saveConfig();
 
-        ItemStack compass = this.getPlayerCompass(hunter);
+        ItemStack compass = this.getPlayerCompass(player);
         if (compass != null) {
             CompassMeta meta = (CompassMeta)compass.getItemMeta();
             meta.setDisplayName(null);
@@ -449,23 +470,23 @@ public class ManhuntManager
         }
     }
 
-    public void giveHunterCompass(Player hunter, @Nullable Player target)
+    public void giveTrackingCompass(Player player, @Nullable Player target)
     {
         ItemStack compass = new ItemStack(Material.COMPASS, 1);
         CompassMeta meta = (CompassMeta)compass.getItemMeta();
         meta.setLodestoneTracked(false);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         compass.setItemMeta(meta);
-        hunter.getInventory().addItem(compass);
+        player.getInventory().addItem(compass);
         if (target != null) {
-            this.setHunterTarget(hunter, target, this.getPlayerCompass(hunter));
+            this.setPlayerTarget(player, target, this.getPlayerCompass(player));
         }
     }
 
-    public Player getHunterTarget(Player hunter)
+    public Player getPlayerTarget(Player player)
     {
-        String runnerName = this.targets.get(hunter.getName());
-        return runnerName == null ? null : Bukkit.getPlayer(runnerName);
+        String targetName = this.targets.get(player.getName());
+        return targetName == null ? null : Bukkit.getPlayer(targetName);
     }
 
     public int getTeamIDFromName(String teamName)
@@ -549,15 +570,23 @@ public class ManhuntManager
         return players;
     }
 
-    public ArrayList<Player> getRunnerHunters(Player runner)
+    public ArrayList<Player> getPlayersTrackingPlayer(Player target)
     {
-        ArrayList<Player> hunters = new ArrayList<>();
-        for (Player hunter : getTeamPlayers(ManhuntTeam.Hunters))
+        ArrayList<Player> players = new ArrayList<>();
+        for (Player player : this.getParticipants())
         {
-            if (getHunterTarget(hunter) == runner)
-                hunters.add(hunter);
+            if (this.getPlayerInTeam(player, ManhuntTeam.Spectators))
+                continue;
+            if (this.getPlayerTarget(player) == target)
+                players.add(player);
         }
-        return hunters;
+        return players;
+    }
+
+    public ChatColor getTeamColor(int teamID)
+    {
+        String colorChar = this.config.getString(this.teamNames[teamID] + "Color");
+        return colorChar == null ? ChatColor.WHITE : ChatColor.getByChar(colorChar);
     }
 
     public boolean getStarted()
@@ -568,8 +597,8 @@ public class ManhuntManager
     private void setStarted(boolean flag)
     {
         this.isStarted = flag;
-        this.config.set("isStarted", flag);
-        this.plugin.saveConfig();
+        this.config.set("started", flag);
+        this.config.saveConfig();
     }
 
     public boolean getCockhunt()
@@ -589,16 +618,16 @@ public class ManhuntManager
 
     private void startListeners()
     {
-        this.listener = new ManhuntListener(this.plugin);
+        this.listener = new ManhuntListener(this.plugin, this);
         this.plugin.getServer().getPluginManager().registerEvents(this.listener, this.plugin);
         if (this.isCockhunt)
         {
-            this.cockListener = new CockhuntListener(this.plugin);
+            this.cockListener = new CockhuntListener(this.plugin, this);
             this.cockListener.start();
         }
-        if (this.plugin.getDiscordMgr().getTrackMgr() != null)
+        if (this.plugin.getTrackMgr() != null /* TODO: THIS CHECK MUST BE UPDATED */)
         {
-            this.mhTrackMgr = new ManhuntTrackManager(this.plugin);
+            this.mhTrackMgr = new ManhuntTrackManager(this.plugin, this);
             this.mhTrackMgr.start();
         }
     }

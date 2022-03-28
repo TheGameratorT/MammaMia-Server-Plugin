@@ -1,26 +1,20 @@
-package com.thegameratort.mammamia;
+package com.thegameratort.mammamia.manhunt;
 
-import java.util.ArrayList;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import com.thegameratort.mammamia.MammaMia;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+
+import java.util.ArrayList;
 
 public class ManhuntListener implements Listener
 {
@@ -28,10 +22,22 @@ public class ManhuntListener implements Listener
     private final ManhuntManager mhMgr;
     private final ArrayList<Inventory> invs = new ArrayList<>();
 
-    ManhuntListener(MammaMia plugin)
+    static class TrackingTarget
+    {
+        Player player;
+        int teamID;
+
+        TrackingTarget(Player player, int teamID)
+        {
+            this.player = player;
+            this.teamID = teamID;
+        }
+    };
+
+    ManhuntListener(MammaMia plugin, ManhuntManager mhMgr)
     {
         this.plugin = plugin;
-        this.mhMgr = plugin.getMhMgr();
+        this.mhMgr = mhMgr;
     }
 
     @EventHandler
@@ -40,22 +46,51 @@ public class ManhuntListener implements Listener
         Player player = event.getPlayer();
         if (player.getInventory().getItemInMainHand().getType() == Material.COMPASS)
         {
-            if (!this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters))
+            int teamID = this.mhMgr.getPlayerTeam(player);
+            if (teamID != ManhuntTeam.Hunters && teamID != ManhuntTeam.Runners)
                 return;
 
             Inventory inv = Bukkit.createInventory(null, 9, "Select a player to track");
-            for (Player runner : this.mhMgr.getTeamPlayers(ManhuntTeam.Runners))
+            for (TrackingTarget target : this.getAvailableTargets(player, teamID))
             {
                 ItemStack stack = new ItemStack(Material.PLAYER_HEAD, 1);
                 SkullMeta meta = (SkullMeta)stack.getItemMeta();
-                meta.setOwningPlayer(runner);
-                meta.setDisplayName(runner.getName());
+                meta.setOwningPlayer(target.player);
+                meta.setDisplayName(this.mhMgr.getTeamColor(target.teamID) + target.player.getName());
                 stack.setItemMeta(meta);
                 inv.addItem(stack);
             }
             player.openInventory(inv);
             this.invs.add(inv);
         }
+    }
+
+    private ArrayList<TrackingTarget> getAvailableTargets(Player player, int teamID)
+    {
+        // Get the available targets in order.
+        // Trackable runners show before hunters do and runners can't track hunters.
+
+        ArrayList<TrackingTarget> targets = new ArrayList<>();
+
+        ArrayList<Player> hunters = this.mhMgr.getTeamPlayers(ManhuntTeam.Hunters);
+        ArrayList<Player> runners = this.mhMgr.getTeamPlayers(ManhuntTeam.Runners);
+
+        for (Player runner : runners)
+        {
+            if (runner != player)
+                targets.add(new TrackingTarget(runner, ManhuntTeam.Runners));
+        }
+
+        if (teamID == ManhuntTeam.Hunters)
+        {
+            for (Player hunter : hunters)
+            {
+                if (hunter != player)
+                    targets.add(new TrackingTarget(hunter, ManhuntTeam.Hunters));
+            }
+        }
+
+        return targets;
     }
 
     @EventHandler
@@ -90,7 +125,7 @@ public class ManhuntListener implements Listener
 
         if (runner instanceof Player)
         {
-            this.mhMgr.setHunterTarget(hunter, (Player)runner, this.mhMgr.getPlayerCompass(hunter));
+            this.mhMgr.setPlayerTarget(hunter, (Player)runner, this.mhMgr.getPlayerCompass(hunter));
             hunter.sendMessage("Compass is now tracking " + runnerName);
         }
         else
@@ -107,20 +142,24 @@ public class ManhuntListener implements Listener
     {
         Player player = event.getPlayer();
         Material material = event.getItemDrop().getItemStack().getType();
-        if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters) && material == Material.COMPASS)
-            event.setCancelled(true);
+        if (material == Material.COMPASS)
+        {
+            int teamID = this.mhMgr.getPlayerTeam(player);
+            if (teamID == ManhuntTeam.Hunters || teamID == ManhuntTeam.Runners)
+                event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event)
     {
-        Player runner = event.getPlayer();
-        if (!this.mhMgr.getPlayerInTeam(runner, ManhuntTeam.Runners))
-            return;
-        for (Player hunter : this.mhMgr.getTeamPlayers(ManhuntTeam.Hunters))
+        Player target = event.getPlayer();
+        for (Player player : this.mhMgr.getParticipants())
         {
-            if (runner == this.mhMgr.getHunterTarget(hunter))
-                this.mhMgr.updateCompassTarget(hunter, runner);
+            if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Spectators))
+                continue;
+            if (target == this.mhMgr.getPlayerTarget(player))
+                this.mhMgr.updateCompassTarget(player, target);
         }
     }
 
@@ -131,7 +170,7 @@ public class ManhuntListener implements Listener
         if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters))
         {
             Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
-                this.mhMgr.giveHunterCompass(player, this.mhMgr.getHunterTarget(player));
+                this.mhMgr.giveTrackingCompass(player, this.mhMgr.getPlayerTarget(player));
             }, 1);
         }
     }
@@ -150,7 +189,7 @@ public class ManhuntListener implements Listener
             switch(teamID)
             {
                 case ManhuntTeam.Hunters:
-                    Player runner = this.mhMgr.getHunterTarget(p);
+                    Player runner = this.mhMgr.getPlayerTarget(p);
                     if (runner != null)
                     {
                         if (dw == runner.getWorld())
@@ -166,9 +205,12 @@ public class ManhuntListener implements Listener
                     }
                     break;
                 case ManhuntTeam.Runners:
-                    for (Player hunter : this.mhMgr.getRunnerHunters(p)) {
-                        if (dw != hunter.getWorld())
-                            hunter.sendActionBar("Your target left your dimension.");
+                    for (Player hunter : this.mhMgr.getPlayersTrackingPlayer(p)) {
+                        // only hunters get this message
+                        if (this.mhMgr.getPlayerInTeam(hunter, ManhuntTeam.Hunters)) {
+                            if (dw != hunter.getWorld())
+                                hunter.sendActionBar("Your target left your dimension.");
+                        }
                     }
                     break;
             }
@@ -185,19 +227,21 @@ public class ManhuntListener implements Listener
     {
         Player player = event.getEntity();
         int teamID = this.mhMgr.getPlayerTeam(player);
-        switch (teamID)
+
+        if (teamID == ManhuntTeam.Spectators)
+            return;
+
+        event.getDrops().removeIf(i -> (i.getType() == Material.COMPASS));
+
+        if (teamID == ManhuntTeam.Runners)
         {
-            case ManhuntTeam.Hunters:
-                event.getDrops().removeIf(i -> (i.getType() == Material.COMPASS));
-                break;
-            case ManhuntTeam.Runners:
-                for (Player hunter : this.mhMgr.getRunnerHunters(player))
-                    this.mhMgr.removeHunterTarget(hunter);
-                player.setGameMode(GameMode.SPECTATOR);
-                Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
-                    this.mhMgr.setPlayerTeam(player, teamID, ManhuntTeam.Spectators);
-                }, 1);
-                break;
+            for (Player hunter : this.mhMgr.getPlayersTrackingPlayer(player))
+                this.mhMgr.clearPlayerTarget(hunter);
+
+            player.setGameMode(GameMode.SPECTATOR);
+            Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
+                this.mhMgr.setPlayerTeam(player, teamID, ManhuntTeam.Spectators);
+            }, 1);
         }
     }
 }
