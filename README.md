@@ -2,18 +2,20 @@
 The Mamma Mia server controller plugin.
 
 ### Requirements
-- Bukkit/Spigot/Paper 1.16.5 Server
-- [Multiverse Core](https://dev.bukkit.org/projects/multiverse-core) (4.2.2)
-- [Multiverse Inventories](https://dev.bukkit.org/projects/multiverse-inventories) (4.2.1)
+- Bukkit/Spigot/Paper 1.18.2 Server
+- [Multiverse Core](https://dev.bukkit.org/projects/multiverse-core) (4.3.2-SNAPSHOT)
+- [Multiverse Inventories](https://dev.bukkit.org/projects/multiverse-inventories) (4.2.3)
 - [Multiverse NetherPortals](https://dev.bukkit.org/projects/multiverse-netherportals/) (4.2.1)
+- [Fast Async World Edit](https://intellectualsites.github.io/download/fawe.html) (2.1.1-SNAPSHOT-132)
 
 Version in parentheses is the last known working version.
 
 ### Plugin features
 - Manhunt game
+- PvP game
+- Kit system
 - Loading screen
 - Offline mode support
-- LabyMod integration
 
 ### Manhunt features
 - On-the-fly game regeneration
@@ -40,8 +42,9 @@ server.default:
     mm.mh.join: true
     mm.mh.leave: true
     mm.mh.set: false
-    mm.mh.reloadtracks: false
-    mm.mh.botvc: false
+    mm.mh.cockhunt: false
+    mm.mh.debug: false
+    mm.mh.menu: true
 server.op:
   default: op
   children:
@@ -51,8 +54,8 @@ server.op:
     mm.mh.stop: true
     mm.mh.set: true
     mm.mh.cockhunt: true
-    mm.mh.reloadtracks: true
-    mm.mh.botvc: true
+    mm.mh.debug: true
+    mm.mh.menu: true
 ```
 You may change this scheme if you use any other permissions plugin or structure.\
 The `mv.bypass.gamemode.manhunt*` permissions are required for all players, otherwise Multiverse will conflict with the plugin's own gamemode management.
@@ -92,24 +95,73 @@ Everything should now be ready to play!
 Command prefix `manhunt`\
 Usage example: `manhunt start`
 
-| Command             | Permission         | Description                                     |
-|---------------------|--------------------|-------------------------------------------------|
-| new                 | mm.mh.new          | Regenerates the manhunt world                   |
-| start               | mm.mh.start        | Starts the manhunt (clears inventory and heals) |
-| resume              | mm.mh.resume       | Resumes the manhunt                             |
-| stop                | mm.mh.stop         | Stops the manhunt                               |
-| join <team>         | mm.mh.join         | Makes you join a team                           |
-| leave               | mm.mh.leave        | Makes you leave the manhunt                     |
-| set <player> <team> | mm.mh.set          | Sets the team of a player                       |
-| cockhunt            | mm.mh.cockhunt     | Enables shitpost mode                           |
-| reloadtracks        | mm.mh.reloadtracks | Reloads all of the music tracks                 |
-| botvc               | mm.mh.botvc        | Makes the bot re-join voice chat                |
+| Command               | Permission     | Description                                     |
+|-----------------------|----------------|-------------------------------------------------|
+| new                   | mm.mh.new      | Regenerates the manhunt world                   |
+| start                 | mm.mh.start    | Starts the manhunt (clears inventory and heals) |
+| resume                | mm.mh.resume   | Resumes the manhunt                             |
+| stop                  | mm.mh.stop     | Stops the manhunt                               |
+| join \<team>          | mm.mh.join     | Makes you join a team                           |
+| leave                 | mm.mh.leave    | Makes you leave the manhunt                     |
+| set \<player> \<team> | mm.mh.set      | Sets the team of a player                       |
+| cockhunt              | mm.mh.cockhunt | Enables shitpost mode                           |
+| debug                 | mm.mh.debug    | Allows for force starting the manhunt           |
+| menu                  | mm.mh.menu     | Makes the bot re-join voice chat                |
 
 Available manhunt teams:
  - none
  - hunters
  - runners
  - spectators
+
+### Discord command reference
+Command prefix `discord`\
+Usage example: `discord joinVC`
+
+| Command              | Permission          | Description                                       |
+|----------------------|---------------------|---------------------------------------------------|
+| joinVC               | mm.discord.joinVC   | Forces the discord bot to join the voice channel  |
+| leaveVC              | mm.discord.leaveVC  | Forces the discord bot to leave the voice channel |
+| startup              | mm.discord.startup  | Connects the bot client if it's shutdown          |
+| shutdown             | mm.discord.shutdown | Disconnects the discord bot client                |
+| enable               | mm.discord.enable   | Same as startup but applies to config             |
+| disable              | mm.discord.disable  | Same as shutdown but applies to config            |
+| set \<prop> \<value> | mm.discord.set      | Sets the value of a bot property                  |
+
+Available discord bot properties:
+ - botToken (string)
+ - botStatus (string)
+ - guildID (long)
+ - voiceChannelID (long)
+
+### PvP command reference
+Command prefix `pvp`\
+Usage example: `pvp startDuel 0 Player1 Player2`
+
+| Command                                      | Permission         | Description                                    |
+|----------------------------------------------|--------------------|------------------------------------------------|
+| menu                                         | mm.pvp.menu        | Opens the PvP menu                             |
+| startDuel \<arenaID> \<player1> \<player2>   | mm.pvp.startDuel   | Starts a PvP duel on the specified arena       |
+| startSpleef \<arenaID> \<player1> \<player2> | mm.pvp.startSpleef | Starts a spleef duel on the specified arena    |
+| removeGame \<gameID>                         | mm.pvp.removeGame  | Forcefully removes a PvP game instancce        |
+| listGames                                    | mm.pvp.listGames   | Lists all PvP game instances and their players |
+
+### Kit command reference
+Command prefix `kit`\
+Usage example: `kit claim manhunt`
+
+| Command               | Permission         | Description                                                    |
+|-----------------------|--------------------|----------------------------------------------------------------|
+| menu                  | mm.kit.menu        | Opens the kit menu                                             |
+| list                  | mm.kit.list        | Lists all available kits                                       |
+| claim \<kit>          | mm.kit.claim       | Gives the specified kit to the player                          |
+| give \<player> \<kit> | mm.kit.give        | Gives the specified kit to the specified player                |
+| create \<kit>         | mm.kit.create      | Creates a new kit based on the player inventory                |
+| remove \<kit>         | mm.kit.remove      | Deletes the specified kit                                      |
+| seticon \<kit>        | mm.kit.seticon     | Changes the kit icon to the item being held                    |
+| rename \<kit> \<name> | mm.kit.rename      | Renames the specified kit                                      |
+| update \<kit>         | mm.kit.update      | Matches the specified kit's contents with the player inventory |
+| reload                | mm.kit.reload      | Reloads all kits                                               |
 
 ### Credits
  - Plugin by TheGameratorT
