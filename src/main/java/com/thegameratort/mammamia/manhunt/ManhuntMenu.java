@@ -28,24 +28,43 @@ public class ManhuntMenu
         menu.open(player);
     }
 
-    private static void openChooseTeamMenu(GUIMenu parent, Player player)
+    private static void openChooseTeamMenu(GUIMenu parent, Player owner, Player target)
     {
         GUIMenu menu = new GUIMenu(3, "Manhunt Team Menu");
 
-        menu.setIcon(10, MenuUtils.createIcon(Material.IRON_AXE, "Hunter", "Joins the hunters team.", "manhunt join"));
-        menu.setIcon(11, MenuUtils.createIcon(Material.ENDER_EYE, "Runner", "Joins the runners team.", "manhunt join"));
-        menu.setIcon(12, MenuUtils.createIcon(Material.WARPED_ROOTS, "Spectator", "Joins the spectators team.", "manhunt join"));
-        menu.setIcon(14, MenuUtils.createIcon(Material.BARRIER, "Leave", "Leaves the manhunt.", "manhunt leave"));
+        String joinHuntersCmd, joinRunnersCmd, joinSpectatorsCmd, leaveCmd, leaveText;
+        if (owner == target)
+        {
+            joinHuntersCmd = "manhunt join hunters";
+            joinRunnersCmd = "manhunt join runners";
+            joinSpectatorsCmd = "manhunt join spectators";
+            leaveCmd = "manhunt leave";
+            leaveText = "Leave";
+        }
+        else
+        {
+            String targetName = target.getName();
+            joinHuntersCmd = "manhunt set " + targetName + " hunters";
+            joinRunnersCmd = "manhunt set " + targetName + " runners";
+            joinSpectatorsCmd = "manhunt set " + targetName + " spectators";
+            leaveCmd = "manhunt set " + targetName + " none";
+            leaveText = "None";
+        }
+
+        menu.setIcon(10, MenuUtils.createIcon(Material.IRON_AXE, "Hunter", "Joins the hunters team.", joinHuntersCmd));
+        menu.setIcon(11, MenuUtils.createIcon(Material.ENDER_EYE, "Runner", "Joins the runners team.", joinRunnersCmd));
+        menu.setIcon(12, MenuUtils.createIcon(Material.WARPED_ROOTS, "Spectator", "Joins the spectators team.", joinSpectatorsCmd));
+        menu.setIcon(14, MenuUtils.createIcon(Material.BARRIER, leaveText, "Leaves the manhunt.", leaveCmd));
         menu.setIcon(16, MenuUtils.createReturnIcon(parent));
 
-        menu.open(player);
+        menu.open(owner);
     }
 
     private static void openSetTeamMenu(GUIMenu parent, Player player)
     {
         if (!player.hasPermission("mm.mh.set"))
         {
-            openChooseTeamMenu(parent, player);
+            openChooseTeamMenu(parent, player, player);
             return;
         }
 
@@ -60,13 +79,18 @@ public class ManhuntMenu
         for (Player oplayer : oplayers)
         {
             menu.setIcon(slot, MenuUtils.createHeadIcon(oplayer, player1 -> {
-                openChooseTeamMenu(menu, oplayer);
+                openChooseTeamMenu(menu, player1, oplayer);
                 return false;
             }));
-            if (++rowc > 4)
+            rowc++;
+            if (rowc > 4)
             {
                 rowc = 0;
                 slot += 5;
+            }
+            else
+            {
+                slot++;
             }
         }
 
