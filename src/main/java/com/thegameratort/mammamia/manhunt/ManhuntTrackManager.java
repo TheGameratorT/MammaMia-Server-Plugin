@@ -99,7 +99,8 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         new TrackEntry("mh_tenseMax", true),
         new TrackEntry("mh_tenseMed", false),
         new TrackEntry("mh_tenseMin", false),
-        new TrackEntry("mh_tenseMin", true)
+        new TrackEntry("mh_tenseMin", true),
+        new TrackEntry("mh_tenseMax", false)
     };
 
     private final TrackEntry[] specialTracks = {
@@ -154,7 +155,6 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
             return;
         TrackEntry track = getNextTrack();
         proposeTrack(track);
-        this.plugin.getLogger().info("Next candidate: " + track.trackName + " | wait: " + track.playOnEnd);
     }
 
     //public void onTrackStart() {}
@@ -247,6 +247,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                     if (di.distance < 100)
                         track = this.currentTrack;
                     break;
+                case "mh_tenseMax":
                 case "mh_tenseMed":
                     if (di.distance < 10)
                         track = this.fightTrack; // mh_fight | no wait
@@ -289,7 +290,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                         break;
                     }
                     if (di.distance < 100) {
-                        track = this.tenseTracks[0]; // mh_tenseMax | wait
+                        track = this.tenseTracks[4]; // mh_tenseMax | no wait
                         break;
                     }
                     if (di.distance < 200) {
@@ -314,6 +315,18 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         if (skipCurrent) {
             track = track.makeCopy();
             track.playOnEnd = false;
+        }
+        if (mhMgr.getDebug())
+        {
+            String debugMsg =
+                "DistanceInfo{" + Math.round(di.distance) + ";" + di.env + "}," +
+                "ProposeTrack{" + track.trackName + ";" + track.playOnEnd + "}";
+            for (Player player : mhMgr.getParticipants())
+            {
+                if (player.isOp())
+                    player.sendMessage(debugMsg);
+            }
+            this.plugin.getLogger().info(debugMsg);
         }
         return track;
     }

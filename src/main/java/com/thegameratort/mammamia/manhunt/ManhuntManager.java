@@ -606,6 +606,11 @@ public class ManhuntManager
         return this.isCockhunt;
     }
 
+    public boolean getDebug()
+    {
+        return this.isDebug;
+    }
+
     public boolean getAlertWrongDimension()
     {
         return this.alertWrongDimension;
