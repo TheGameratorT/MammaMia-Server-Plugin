@@ -2,11 +2,12 @@
 The Mamma Mia server controller plugin.
 
 ### Requirements
-- Bukkit/Spigot/Paper 1.18.2 Server
+- Bukkit/Spigot/Paper 1.19.1 Server
 - [Multiverse Core](https://dev.bukkit.org/projects/multiverse-core) (4.3.2-SNAPSHOT)
 - [Multiverse Inventories](https://dev.bukkit.org/projects/multiverse-inventories) (4.2.3)
-- [Multiverse NetherPortals](https://dev.bukkit.org/projects/multiverse-netherportals/) (4.2.1)
-- [Fast Async World Edit](https://intellectualsites.github.io/download/fawe.html) (2.1.1-SNAPSHOT-132)
+- [Multiverse NetherPortals](https://dev.bukkit.org/projects/multiverse-netherportals/) (4.2.2)
+- [Fast Async World Edit](https://intellectualsites.github.io/download/fawe.html) (2.4.3-SNAPSHOT-254)
+- [ProtocolLib](https://www.spigotmc.org/resources/protocollib.1997/) (5.0.0-SNAPSHOT)
 
 Version in parentheses is the last known working version.
 
@@ -23,6 +24,7 @@ Version in parentheses is the last known working version.
 - Un-droppable compass
 - Game automatically resumes after server shutdown
 - Shitpost mode
+- Disables advancements for spectators
 
 ### Plugin installation
 Make sure your server is not running while installing.\
@@ -91,12 +93,22 @@ To setup the manhunt worlds run the following commands: \
 You might want to mess with the `config.yml` file to enable certain features.\
 Everything should now be ready to play!
 
+### Main command reference
+Command prefix `mammamia`\
+Usage example: `mammamia menu`
+
+| Command           | Permission | Description                |
+|-------------------|------------|----------------------------|
+| menu              | mm.menu    | Opens the Mamma Mia menu   |
+| respawn \<player> | mm.respawn | Forces a player to respawn |
+
 ### Manhunt command reference
 Command prefix `manhunt`\
 Usage example: `manhunt start`
 
 | Command               | Permission     | Description                                     |
 |-----------------------|----------------|-------------------------------------------------|
+| menu                  | mm.mh.menu     | Opens the manhunt menu                          |
 | new                   | mm.mh.new      | Regenerates the manhunt world                   |
 | start                 | mm.mh.start    | Starts the manhunt (clears inventory and heals) |
 | resume                | mm.mh.resume   | Resumes the manhunt                             |
@@ -106,7 +118,6 @@ Usage example: `manhunt start`
 | set \<player> \<team> | mm.mh.set      | Sets the team of a player                       |
 | cockhunt              | mm.mh.cockhunt | Enables shitpost mode                           |
 | debug                 | mm.mh.debug    | Allows for force starting the manhunt           |
-| menu                  | mm.mh.menu     | Makes the bot re-join voice chat                |
 
 Available manhunt teams:
  - none
@@ -133,6 +144,16 @@ Available discord bot properties:
  - botStatus (string)
  - guildID (long)
  - voiceChannelID (long)
+
+### Track command reference
+Command prefix `track`\
+Usage example: `track play mh_start 0`
+
+| Command                          | Permission      | Description                             |
+|----------------------------------|-----------------|-----------------------------------------|
+| play \<trackName> \<startOffset> | mm.track.play   | Starts playing an audio track           |
+| stop                             | mm.track.stop   | Stops the currently playing audio track |
+| reload                           | mm.track.reload | Reloads all the audio tracks            |
 
 ### PvP command reference
 Command prefix `pvp`\
