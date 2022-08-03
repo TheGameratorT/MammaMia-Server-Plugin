@@ -4,6 +4,7 @@ import com.thegameratort.mammamia.MammaMia;
 import com.thegameratort.mammamia.track.TrackEventAdapter;
 import com.thegameratort.mammamia.track.TrackManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EnderDragon;
@@ -69,8 +70,11 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     private TrackEntry nextTrack = new TrackEntry();
     private final ArrayList<String> rngOrgasms = new ArrayList<>();
     private final ArrayList<String> rngTrolls = new ArrayList<>();
+    private final ArrayList<String> rngFitmcs = new ArrayList<>();
     private boolean isFinale = false;
-    private boolean rngIsFeelingExcited = false;
+    private boolean isFitmcTrack = false;
+    private boolean rngIsFeelingExcited;
+    private int lastTrollTrackTick = 0;
 
     private final TrackEntry[] calmTracks = {
         new TrackEntry("mh_calm1", true),
@@ -122,6 +126,20 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         new TrackEntry("ch_troll3", false)
     };
 
+    private final TrackEntry[] fitmcTracks = {
+        new TrackEntry("ch_fit1", false),
+        new TrackEntry("ch_fit2", false),
+        new TrackEntry("ch_fit3", false),
+        new TrackEntry("ch_fit4", false),
+        new TrackEntry("ch_fit5", false),
+        new TrackEntry("ch_fit6", false),
+        new TrackEntry("ch_fit7", false),
+        new TrackEntry("ch_fit8", false),
+        new TrackEntry("ch_fit9", false),
+        new TrackEntry("ch_fit10", false),
+        new TrackEntry("ch_fit11", false)
+    };
+
     private final TrackEntry startTrack = new TrackEntry("mh_start", false);
     private final TrackEntry fightTrack = new TrackEntry("mh_fight", false);
     private final TrackEntry endTrack = new TrackEntry("mh_end", false);
@@ -139,6 +157,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         Bukkit.getPluginManager().registerEvents(this, this.plugin);
         this.trackMgr.setListener(this);
         this.updaterTaskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this.plugin, this::update, 0L, 20L);
+        this.rngIsFeelingExcited = this.random.nextInt(2) != 0;
     }
 
     public void stop()
@@ -151,6 +170,18 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
 
     private void update()
     {
+        if (this.mhMgr.getCockhunt() && !this.isSpecial)
+        {
+            int currentTick = Bukkit.getCurrentTick();
+            if (currentTick - this.lastTrollTrackTick > 20 * 60) // 1 minute must have passed
+            {
+                if (this.random.nextInt(500) == 0)
+                {
+                    this.playFitMcTrack();
+                    this.lastTrollTrackTick = currentTick;
+                }
+            }
+        }
         if (this.isSpecial)
             return;
         TrackEntry track = getNextTrack();
@@ -165,8 +196,14 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
             this.blockEndEvent = false;
             return;
         }
+        if (this.isFitmcTrack)
+        {
+            for (Player player : this.mhMgr.getParticipants())
+                player.sendMessage(ChatColor.YELLOW + "FitMC left the game");
+        }
         this.isPlaying = false;
         this.isSpecial = false;
+        this.isFitmcTrack = false;
         if (this.currentTrack.equals(this.nextTrack))
             startTrack(this.currentTrack);
         else if (!this.nextTrack.trackName.isEmpty())
@@ -318,9 +355,10 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         }
         if (mhMgr.getDebug())
         {
+            String distanceStr = di.distance == Double.MAX_VALUE ? "INF" : Long.toString(Math.round(di.distance));
             String debugMsg =
-                "DistanceInfo{" + Math.round(di.distance) + ";" + di.env + "}," +
-                "ProposeTrack{" + track.trackName + ";" + track.playOnEnd + "}";
+                "{" + distanceStr + ";" + di.env + "}, " +
+                "{" + track.trackName + ";" + track.playOnEnd + "}";
             for (Player player : mhMgr.getParticipants())
             {
                 if (player.isOp())
@@ -346,7 +384,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     private TrackEntry getDifferentTrack(TrackEntry[] tracks)
     {
         while (true) {
-            TrackEntry track = tracks[(int)(Math.random() * tracks.length)];
+            TrackEntry track = tracks[this.random.nextInt(tracks.length)];
             if (!track.equals(this.currentTrack))
                 return track;
         }
@@ -401,16 +439,21 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event)
     {
-        if (this.mhMgr.getCockhunt())
+        if (this.mhMgr.getCockhunt() && !this.isSpecial)
         {
-            int rng = this.random.nextInt(1000);
-            if (rng == 0)
+            int currentTick = Bukkit.getCurrentTick();
+            if (currentTick - this.lastTrollTrackTick > 20 * 60) // 1 minute must have passed
             {
-                if (this.rngIsFeelingExcited)
-                    this.playSomeTrollRngTrack(this.orgasmTracks, this.rngOrgasms);
-                else
-                    this.playSomeTrollRngTrack(this.trollTracks, this.rngTrolls);
-                this.rngIsFeelingExcited = !this.rngIsFeelingExcited;
+                int rng = this.random.nextInt(900);
+                if (rng == 0)
+                {
+                    if (this.rngIsFeelingExcited)
+                        this.playSomeTrollRngTrack(this.orgasmTracks, this.rngOrgasms);
+                    else
+                        this.playSomeTrollRngTrack(this.trollTracks, this.rngTrolls);
+                    this.rngIsFeelingExcited = !this.rngIsFeelingExcited;
+                    this.lastTrollTrackTick = currentTick;
+                }
             }
         }
 
@@ -433,6 +476,18 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         } while (rngTracks.contains(track.trackName));
         rngTracks.add(track.trackName);
         startSpecialTrack(track);
+    }
+
+    private void playFitMcTrack()
+    {
+        stopTracks();
+        this.isSpecial = true; // Set in advance to prevent another music from playing
+        this.isFitmcTrack = true;
+        for (Player player : this.mhMgr.getParticipants())
+            player.sendMessage(ChatColor.YELLOW + "FitMC has joined the game");
+        Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () ->
+            this.playSomeTrollRngTrack(this.fitmcTracks, this.rngFitmcs)
+        , 30);
     }
 
     @EventHandler
