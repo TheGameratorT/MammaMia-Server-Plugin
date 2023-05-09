@@ -56,6 +56,7 @@ public class ManhuntCommand implements CommandExecutor, TabExecutor {
             list.add("resume");
             list.add("stop");
             list.add("join");
+            list.add("leave");
             list.add("set");
             list.add("cockhunt");
             list.add("debug");

@@ -6,7 +6,7 @@
 
     <groupId>com.thegameratort.</groupId>
     <artifactId>MammaMia</artifactId>
-    <version>1.3</version>
+    <version>1.4</version>
     <packaging>jar</packaging>
 
     <name>MammaMia</name>
@@ -79,6 +79,11 @@
             <id>dmulloy2-repo</id>
             <url>https://repo.dmulloy2.net/repository/public/</url>
         </repository>
+        <repository>
+            <id>dv8tion</id>
+            <name>m2-dv8tion</name>
+            <url>https://m2.dv8tion.net/releases</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -105,13 +110,13 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>4.2.0_227</version>
+            <version>5.0.0-beta.9</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.sedmelluq</groupId>
             <artifactId>lavaplayer</artifactId>
-            <version>1.3.66</version>
+            <version>1.3.77</version>
         </dependency>
         <dependency>
             <groupId>com.fastasyncworldedit</groupId>

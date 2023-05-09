@@ -7,13 +7,13 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
+import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.managers.AudioManager;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 
-import javax.security.auth.login.LoginException;
 import java.util.logging.Logger;
 
 public class DiscordManager {
@@ -176,11 +176,11 @@ public class DiscordManager {
         try {
             this.client = builder.build();
             this.client.awaitReady();
-        } catch (LoginException e) {
-            this.logger.warning("LoginException: Discord token is invalid. " + e.getMessage());
+        } catch (InvalidTokenException e) {
+            this.logger.warning("InvalidTokenException: Discord token is invalid. " + e.getMessage());
             this.client = null;
             return;
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             this.client = null;
             return;
