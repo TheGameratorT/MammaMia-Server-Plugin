@@ -36,7 +36,12 @@ public class ManhuntCommand implements CommandExecutor, TabExecutor {
                 case "join" -> manager.join(sender, args);
                 case "leave" -> manager.leave(sender);
                 case "set" -> manager.set(sender, args);
-                case "cockhunt" -> manager.cockhunt(sender);
+                case "cockhunt" -> {
+                    if (args.length == 1)
+                        manager.cockhunt(sender);
+                    else
+                        manager.cockhuntFlag(sender, args[1]);
+                }
                 case "debug" -> manager.toggleDebug(sender);
                 case "menu" -> {
                     if (sender instanceof Player player)
@@ -81,6 +86,11 @@ public class ManhuntCommand implements CommandExecutor, TabExecutor {
                             list.add("none");
                             Collections.addAll(list, manager.getTeamNames());
                         }
+                    }
+                }
+                case "cockhunt" -> {
+                    if (argCount == 2) {
+                        Collections.addAll(list, this.manager.getCockhuntFlagNames());
                     }
                 }
             }

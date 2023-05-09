@@ -3,8 +3,10 @@ package com.thegameratort.mammamia.manhunt;
 import com.thegameratort.mammamia.MammaMia;
 import com.thegameratort.mammamia.track.TrackEventAdapter;
 import com.thegameratort.mammamia.track.TrackManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EnderDragon;
@@ -18,6 +20,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class ManhuntTrackManager extends TrackEventAdapter implements Listener
@@ -170,7 +173,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
 
     private void update()
     {
-        if (this.mhMgr.getCockhunt() && !this.isSpecial)
+        if (this.mhMgr.getCockhunt() && this.mhMgr.getCockhuntHasFitmc() && !this.isSpecial)
         {
             int currentTick = Bukkit.getCurrentTick();
             if (currentTick - this.lastTrollTrackTick > 20 * 60) // 1 minute must have passed
@@ -199,7 +202,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         if (this.isFitmcTrack)
         {
             for (Player player : this.mhMgr.getParticipants())
-                player.sendMessage(ChatColor.YELLOW + "FitMC left the game");
+                sendFakeFitMCMessage(player, "multiplayer.player.left");
         }
         this.isPlaying = false;
         this.isSpecial = false;
@@ -321,7 +324,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         }
         if (track == null) {
             switch (di.env) {
-                case NORMAL:
+                case NORMAL -> {
                     if (di.distance < 10) {
                         track = this.fightTrack; // mh_fight | no wait
                         break;
@@ -336,15 +339,15 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                     }
                     if (di.distance < 300)
                         track = this.tenseTracks[2]; // mh_tenseMin | no wait
-                    break;
-                case NETHER:
+                }
+                case NETHER -> {
                     if (di.distance < 80) {
                         track = this.netherTracks[3]; // mh_netherFightStart | no wait
                         break;
                     }
                     if (di.distance < 150)
                         track = this.netherTracks[0]; // mh_netherTenseStart | no wait
-                    break;
+                }
             }
             if (track == null)
                 track = getNextEnvTrack(di.env);
@@ -371,14 +374,11 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
 
     private TrackEntry getNextEnvTrack(World.Environment env)
     {
-        switch (env) {
-            default:
-                return getDifferentTrack(this.calmTracks);
-            case NETHER:
-                return getDifferentTrack(this.dangerTracks);
-            case THE_END:
-                return this.endTrack;
-        }
+        return switch (env) {
+            default -> getDifferentTrack(this.calmTracks);
+            case NETHER -> getDifferentTrack(this.dangerTracks);
+            case THE_END -> this.endTrack;
+        };
     }
 
     private TrackEntry getDifferentTrack(TrackEntry[] tracks)
@@ -447,12 +447,23 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                 int rng = this.random.nextInt(900);
                 if (rng == 0)
                 {
-                    if (this.rngIsFeelingExcited)
-                        this.playSomeTrollRngTrack(this.orgasmTracks, this.rngOrgasms);
-                    else
-                        this.playSomeTrollRngTrack(this.trollTracks, this.rngTrolls);
-                    this.rngIsFeelingExcited = !this.rngIsFeelingExcited;
-                    this.lastTrollTrackTick = currentTick;
+                    boolean hentaiFlag = this.mhMgr.getCockhuntHasHentai();
+                    boolean trollFlag = this.mhMgr.getCockhuntHasTroll();
+                    if (hentaiFlag || trollFlag)
+                    {
+                        boolean playHentai = this.rngIsFeelingExcited;
+                        if (!hentaiFlag)
+                            playHentai = false;
+                        if (!trollFlag)
+                            playHentai = true;
+
+                        if (playHentai)
+                            this.playSomeTrollRngTrack(this.orgasmTracks, this.rngOrgasms);
+                        else
+                            this.playSomeTrollRngTrack(this.trollTracks, this.rngTrolls);
+                        this.rngIsFeelingExcited = !playHentai;
+                        this.lastTrollTrackTick = currentTick;
+                    }
                 }
             }
         }
@@ -483,8 +494,10 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         stopTracks();
         this.isSpecial = true; // Set in advance to prevent another music from playing
         this.isFitmcTrack = true;
+
         for (Player player : this.mhMgr.getParticipants())
-            player.sendMessage(ChatColor.YELLOW + "FitMC has joined the game");
+            sendFakeFitMCMessage(player, "multiplayer.player.joined");
+
         Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () ->
             this.playSomeTrollRngTrack(this.fitmcTracks, this.rngFitmcs)
         , 30);
@@ -498,7 +511,7 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
         Player player = event.getEntity();
         int pTeamID = this.mhMgr.getPlayerTeam(player);
         switch (pTeamID) {
-            case ManhuntTeam.Hunters:
+            case ManhuntTeam.Hunters -> {
                 killer = player.getKiller();
                 hunterKilledByRunner = false;
                 if (killer != null)
@@ -509,10 +522,8 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
                     break;
                 }
                 startHunterDeathTrack(this.specialTracks[0]); // mh_hunterDeath | no wait
-                break;
-            case ManhuntTeam.Runners:
-                startSpecialTrack(this.specialTracks[1]); // mh_runnerDeath | no wait
-                break;
+            }
+            case ManhuntTeam.Runners -> startSpecialTrack(this.specialTracks[1]); // mh_runnerDeath | no wait
         }
     }
 
@@ -520,14 +531,22 @@ public class ManhuntTrackManager extends TrackEventAdapter implements Listener
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event)
     {
         Entity victim = event.getEntity();
-        if (!(victim instanceof EnderDragon))
+        if (!(victim instanceof EnderDragon dragon))
             return;
-        EnderDragon dragon = (EnderDragon)victim;
         if (dragon.getHealth() <= 50)
         {
             if (!isFinale)
                 startTrack(this.finaleTrack); // mh_finale | no wait
             isFinale = true;
         }
+    }
+
+    private void sendFakeFitMCMessage(Player player, String key)
+    {
+        TranslatableComponent msg =
+            Component.translatable(key)
+                .args(List.of(Component.text("FitMC")))
+                .color(NamedTextColor.YELLOW);
+        player.sendMessage(msg);
     }
 }

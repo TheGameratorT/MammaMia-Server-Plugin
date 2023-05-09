@@ -1,5 +1,10 @@
 started: false
-cockhunt: false
+cockhunt:
+  enabled: false
+  flags:
+    hentai: true
+    troll: true
+    fitmc: true
 compassTracksOutsideOverworld: true
 alertWrongDimension: true
 

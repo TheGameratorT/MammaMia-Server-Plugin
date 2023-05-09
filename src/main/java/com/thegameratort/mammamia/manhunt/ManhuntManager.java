@@ -27,10 +27,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 public class ManhuntManager
 {
@@ -43,7 +40,9 @@ public class ManhuntManager
     public Team[] teams = new Team[3];
     private final HashMap<String, String> targets = new HashMap<>();
     private final HashMap<String, Location> portals = new HashMap<>();
+    private final HashMap<String, Boolean> cockhuntFlags = new HashMap<>();
     private final String[] teamNames = { "hunters", "runners", "spectators" };
+    private final String[] cockhuntFlagNames = { "hentai", "troll", "fitmc" };
     private boolean isStarted;
     private boolean isCockhunt;
     private boolean isDebug = false;
@@ -57,10 +56,21 @@ public class ManhuntManager
 
         this.config = ConfigFile.loadConfig(this.plugin, "manhunt.yml");
 
-        this.isStarted = config.getBoolean("started");
-        this.isCockhunt = config.getBoolean("cockhunt");
-        this.compassTOO = config.getBoolean("compassTracksOutsideOverworld");
-        this.alertWrongDimension = config.getBoolean("alertWrongDimension");
+        this.isStarted = config.getBoolean("started", false);
+        this.compassTOO = config.getBoolean("compassTracksOutsideOverworld", true);
+        this.alertWrongDimension = config.getBoolean("alertWrongDimension", true);
+
+        ConfigurationSection cockhuntSec = config.getConfigurationSection("cockhunt");
+        if (cockhuntSec != null)
+        {
+            this.isCockhunt = cockhuntSec.getBoolean("enabled", false);
+            ConfigurationSection cockhuntFlagsSec = cockhuntSec.getConfigurationSection("flags");
+            if (cockhuntFlagsSec != null)
+            {
+                for (String flagName : this.cockhuntFlagNames)
+                    cockhuntFlags.put(flagName, cockhuntFlagsSec.getBoolean(flagName, true));
+            }
+        }
 
         ConfigurationSection targetSec = config.getConfigurationSection("targets");
         if (targetSec != null)
@@ -364,6 +374,29 @@ public class ManhuntManager
         this.config.saveConfig();
     }
 
+    public void cockhuntFlag(CommandSender sender, String flagName)
+    {
+        if (!Arrays.asList(cockhuntFlagNames).contains(flagName))
+        {
+            sender.sendMessage("Unknown cockhunt flag \"" + flagName + "\" specified.");
+            return;
+        }
+
+        boolean newValue = !cockhuntFlags.get(flagName);
+        sender.sendMessage("Cockhunt flag \"" + flagName + (newValue ? "\" was enabled!" : "\" was disabled!"));
+        cockhuntFlags.put(flagName, newValue);
+
+        ConfigurationSection cockhuntSec = config.getConfigurationSection("cockhunt");
+        if (cockhuntSec != null)
+        {
+            ConfigurationSection cockhuntFlagsSec = cockhuntSec.getConfigurationSection("flags");
+            if (cockhuntFlagsSec != null)
+                cockhuntFlagsSec.set(flagName, newValue);
+        }
+
+        this.config.saveConfig();
+    }
+
     public void toggleDebug(CommandSender sender)
     {
         if (this.isDebug)
@@ -606,6 +639,21 @@ public class ManhuntManager
         return this.isCockhunt;
     }
 
+    public boolean getCockhuntHasHentai()
+    {
+        return this.cockhuntFlags.get("hentai");
+    }
+
+    public boolean getCockhuntHasTroll()
+    {
+        return this.cockhuntFlags.get("troll");
+    }
+
+    public boolean getCockhuntHasFitmc()
+    {
+        return this.cockhuntFlags.get("fitmc");
+    }
+
     public boolean getDebug()
     {
         return this.isDebug;
@@ -619,6 +667,11 @@ public class ManhuntManager
     public String[] getTeamNames()
     {
         return this.teamNames;
+    }
+
+    public String[] getCockhuntFlagNames()
+    {
+        return this.cockhuntFlagNames;
     }
 
     private void startListeners()
