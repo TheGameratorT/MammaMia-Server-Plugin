@@ -1,7 +1,7 @@
 name: MammaMia
-version: 1.3
+version: 1.5
 main: com.thegameratort.mammamia.MammaMia
-api-version: 1.16
+api-version: 1.21
 authors: [ TheGameratorT ]
 description: The Mamma Mia server controller plugin.
 depend: [ Multiverse-Core, Multiverse-Inventories, FastAsyncWorldEdit, ProtocolLib ]

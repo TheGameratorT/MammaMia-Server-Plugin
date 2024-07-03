@@ -5,7 +5,9 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.multiverseinventories.MultiverseInventories;
 import com.thegameratort.mammamia.discord.DiscordManager;
@@ -85,9 +87,12 @@ public final class MammaMia extends JavaPlugin {
         ) {
             @Override
             public void onPacketSending(PacketEvent event) {
-                String chatData = event.getPacket().getStrings().read(0);
-                if (chatData != null)
+                PacketContainer packet = event.getPacket();
+
+                for (WrappedChatComponent chatComponent : packet.getChatComponents().getValues())
                 {
+                    String chatData = chatComponent.getJson();
+
                     // If it is an advancement message packet
                     if (chatData.startsWith("{\"translate\":\"chat.type.advancement.task\""))
                     {
@@ -101,6 +106,8 @@ public final class MammaMia extends JavaPlugin {
                                 event.setCancelled(true);
                         }
                     }
+
+                    break;
                 }
             }
         });

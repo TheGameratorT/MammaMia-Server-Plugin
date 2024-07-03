@@ -119,13 +119,13 @@ public class PvPManager {
         BlockVector3 arenaMaxPos = BlockVector3.at(arena.arenaMaxPos.getX(), arena.arenaMaxPos.getY(), arena.arenaMaxPos.getZ());
 
         int arenaMinToPosX = slot * arenaSpacing;
-        int arenaMinToPosY = arenaMinPos.getY();
+        int arenaMinToPosY = arenaMinPos.y();
         int arenaMinToPosZ = arenasForEnv.get(arena.env).indexOf(arenaID) * arenaSpacing;
         BlockVector3 arenaMinToPos = BlockVector3.at(arenaMinToPosX, arenaMinToPosY, arenaMinToPosZ);
 
-        int arenaMaxToPosX = arenaMaxPos.getX() - (arenaMinPos.getX() - arenaMinToPosX);
-        int arenaMaxToPosY = arenaMaxPos.getY();
-        int arenaMaxToPosZ = arenaMaxPos.getZ() - (arenaMinPos.getZ() - arenaMinToPosZ);
+        int arenaMaxToPosX = arenaMaxPos.x() - (arenaMinPos.x() - arenaMinToPosX);
+        int arenaMaxToPosY = arenaMaxPos.y();
+        int arenaMaxToPosZ = arenaMaxPos.z() - (arenaMinPos.z() - arenaMinToPosZ);
         BlockVector3 arenaMaxToPos = BlockVector3.at(arenaMaxToPosX, arenaMaxToPosY, arenaMaxToPosZ);
 
         game.arenaMinPos = new Vector(arenaMinToPosX, arenaMinToPosY, arenaMinToPosZ);
