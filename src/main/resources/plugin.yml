@@ -25,3 +25,6 @@ commands:
   pvp:
     description: Generic MammaMia Command
     usage: /<command>
+  ffa:
+    description: Generic MammaMia Command
+    usage: /<command>

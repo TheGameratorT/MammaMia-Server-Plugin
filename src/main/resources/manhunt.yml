@@ -8,6 +8,6 @@ cockhunt:
 compassTracksOutsideOverworld: true
 alertWrongDimension: true
 
-huntersColor: c
-runnersColor: a
-spectatorsColor: b
+huntersColor: red
+runnersColor: green
+spectatorsColor: aqua

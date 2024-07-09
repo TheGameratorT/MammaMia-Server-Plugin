@@ -73,6 +73,15 @@ public class LoadingScreen
         this.taskIDs.clear();
     }
 
+    public void close(Location returnLocation)
+    {
+        close();
+
+        for (Player player : this.players) {
+            this.plugin.getMvCore().getSafeTTeleporter().safelyTeleport(Bukkit.getConsoleSender(), player, returnLocation, false);
+        }
+    }
+
     private Entity getArmorStand(World world)
     {
         for (Entity entity : world.getEntities()) {

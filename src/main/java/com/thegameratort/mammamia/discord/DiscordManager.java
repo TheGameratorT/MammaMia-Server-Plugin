@@ -210,6 +210,12 @@ public class DiscordManager {
         leaveVC();
         this.audioManager = null;
         this.client.shutdown();
+        while (true) {
+            try {
+                this.client.awaitShutdown();
+                break;
+            } catch (InterruptedException ignored) {}
+        }
         this.client = null;
         this.logger.info("Bot shutdown successfully.");
     }

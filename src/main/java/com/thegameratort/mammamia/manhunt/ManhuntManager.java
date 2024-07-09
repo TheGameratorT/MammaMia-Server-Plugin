@@ -5,14 +5,13 @@ import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import com.onarandombox.multiverseinventories.MultiverseInventories;
 import com.onarandombox.multiverseinventories.profile.container.ProfileContainer;
-import com.thegameratort.mammamia.ConfigFile;
-import com.thegameratort.mammamia.DelayedExecutor;
-import com.thegameratort.mammamia.LoadingScreen;
-import com.thegameratort.mammamia.MammaMia;
+import com.thegameratort.mammamia.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+import net.kyori.adventure.util.Ticks;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
-import org.bukkit.advancement.Advancement;
-import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
@@ -22,7 +21,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.CompassMeta;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -95,7 +93,7 @@ public class ManhuntManager
             if (team == null)
             {
                 team = board.registerNewTeam(teamName);
-                team.setColor(this.getTeamColor(i));
+                team.color(this.getTeamColor(i));
             }
 
             this.teams[i] = team;
@@ -119,7 +117,7 @@ public class ManhuntManager
         ls.show(this.getParticipants(), () -> {
             DelayedExecutor de = new DelayedExecutor(this.plugin);
 
-            de.add(() -> {
+            de.add(e -> {
                 MVWorldManager worldManager = this.mvCore.getMVWorldManager();
                 String seed = Long.valueOf((new Random()).nextLong()).toString();
                 this.regenWorld(worldManager, "manhunt", seed);
@@ -136,21 +134,17 @@ public class ManhuntManager
                 mvInv.reloadConfig();
             }, 20);
 
-            de.add(() -> {
-                ls.close();
+            de.add(e -> {
                 Location spawn = this.mvCore.getMVWorldManager().getMVWorld("manhunt").getSpawnLocation();
-
-                for (Player player : this.getParticipants()) {
-                    this.mvCore.getSafeTTeleporter().safelyTeleport(Bukkit.getConsoleSender(), player, spawn, false);
-                }
+                ls.close(spawn);
             }, 20);
 
-            de.add(() -> {
+            de.add(e -> {
                 for (Player player : this.getParticipants())
                 {
-                    this.revokePlayerAdvancements(player);
+                    WorldUtils.revokePlayerAdvancements(player);
                     player.setGameMode(GameMode.SURVIVAL);
-                    player.setBedSpawnLocation(null, true);
+                    player.setRespawnLocation(null, true);
                 }
             }, 1);
 
@@ -202,7 +196,7 @@ public class ManhuntManager
             player.setHealth(20);
             player.setFoodLevel(20);
             player.setSaturation(0.6f);
-            this.revokePlayerAdvancements(player);
+            WorldUtils.revokePlayerAdvancements(player);
         }
 
         int runnerCount = this.getTeamPlayers(ManhuntTeam.Runners).size();
@@ -214,13 +208,13 @@ public class ManhuntManager
                 case ManhuntTeam.Hunters -> {
                     if (this.isCockhunt)
                         player.sendMessage("GO GET THAT PINGAS! :>");
-                    this.giveTrackingCompass(player, null);
+                    this.giveTrackingCompass(player, null, -1);
                 }
                 case ManhuntTeam.Runners -> {
                     if (this.isCockhunt)
-                        player.sendTitle("Run as fast as possible!", "They want your pingas...", 10, 70, 20);
+                        player.showTitle(Title.title(Component.text("Run as fast as possible!"), Component.text("They want your pingas..."), Title.Times.times(Ticks.duration(10), Ticks.duration(70), Ticks.duration(20))));
                     if (runnerCount > 1)
-                        this.giveTrackingCompass(player, null);
+                        this.giveTrackingCompass(player, null, -1);
                 }
                 case ManhuntTeam.Spectators -> {
                     player.setGameMode(GameMode.SPECTATOR);
@@ -264,12 +258,11 @@ public class ManhuntManager
 
     public void join(CommandSender sender, String[] args)
     {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be run by a player.");
             return;
         }
-        Player player = (Player)sender;
-        if (this.isStarted) {
+		if (this.isStarted) {
             player.sendMessage("Please stop the manhunt first.");
             return;
         }
@@ -290,13 +283,12 @@ public class ManhuntManager
 
     public void leave(CommandSender sender)
     {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be run by a player.");
             return;
         }
 
-        Player player = (Player)sender;
-        if (this.isStarted) {
+		if (this.isStarted) {
             player.sendMessage("Please stop the manhunt first.");
             return;
         }
@@ -413,7 +405,7 @@ public class ManhuntManager
 
     public void updateCompassTarget(Player player, Player target)
     {
-        ItemStack compass = this.getPlayerCompass(player);
+        ItemStack compass = this.getPlayerCompass(player).itemStack();
         if (compass == null)
             return;
 
@@ -445,19 +437,21 @@ public class ManhuntManager
         }
     }
 
-    public ItemStack getPlayerCompass(Player player)
+    public GetPlayerCompassResult getPlayerCompass(Player player)
     {
         PlayerInventory inv = player.getInventory();
 
-        for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack stack = inv.getItem(i);
+        for (int slot = 0; slot < inv.getSize(); slot++) {
+            ItemStack stack = inv.getItem(slot);
             if (stack != null && stack.getType() == Material.COMPASS) {
-                return stack;
+                return new GetPlayerCompassResult(stack, slot);
             }
         }
 
-        return null;
+        return new GetPlayerCompassResult(null, -1);
     }
+
+    public record GetPlayerCompassResult(ItemStack itemStack, int slot) {}
 
     public void setRunnerPortal(String runnerName, Location portalLocation)
     {
@@ -479,10 +473,14 @@ public class ManhuntManager
 
         if (compass != null)
         {
-            ItemMeta meta = compass.getItemMeta();
-            meta.setDisplayName("Tracking: " + target.getName());
-            compass.setItemMeta(meta);
             compass.addUnsafeEnchantment(Enchantment.MENDING, 1);
+            CompassMeta meta = (CompassMeta)compass.getItemMeta();
+            meta.displayName(Component.text("Tracking: " + target.getName()));
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            if (player.getWorld().getEnvironment() != Environment.NORMAL) {
+                meta.setLodestoneTracked(false);
+            }
+            compass.setItemMeta(meta);
             this.updateCompassTarget(player, target);
         }
     }
@@ -493,26 +491,54 @@ public class ManhuntManager
         this.config.set("targets", this.targets);
         this.config.saveConfig();
 
-        ItemStack compass = this.getPlayerCompass(player);
+        GetPlayerCompassResult getPlayerCompassResult = getPlayerCompass(player);
+        ItemStack compass = getPlayerCompassResult.itemStack();
         if (compass != null) {
-            CompassMeta meta = (CompassMeta)compass.getItemMeta();
-            meta.setDisplayName(null);
-            meta.setLodestone(null);
-            compass.setItemMeta(meta);
-            compass.removeEnchantment(Enchantment.MENDING);
+            if (player.getWorld().getEnvironment() == Environment.NORMAL) {
+                CompassMeta meta = (CompassMeta)compass.getItemMeta();
+                meta.displayName(null);
+                meta.setLodestone(null);
+                compass.setItemMeta(meta);
+                compass.removeEnchantment(Enchantment.MENDING);
+            } else {
+                int slot = getPlayerCompassResult.slot();
+                PlayerInventory inv = player.getInventory();
+                inv.remove(compass);
+                giveTrackingCompass(player, null, slot);
+            }
         }
     }
 
-    public void giveTrackingCompass(Player player, @Nullable Player target)
+    public void giveTrackingCompass(Player player, @Nullable Player target, int slot)
     {
         ItemStack compass = new ItemStack(Material.COMPASS, 1);
-        CompassMeta meta = (CompassMeta)compass.getItemMeta();
-        meta.setLodestoneTracked(false);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        compass.setItemMeta(meta);
-        player.getInventory().addItem(compass);
+        if (slot == -1) {
+            player.getInventory().addItem(compass);
+        } else {
+            player.getInventory().setItem(slot, compass);
+        }
         if (target != null) {
-            this.setPlayerTarget(player, target, this.getPlayerCompass(player));
+            this.setPlayerTarget(player, target, this.getPlayerCompass(player).itemStack());
+        }
+    }
+
+    public void updateCompassEnvironment(Player player)
+    {
+        GetPlayerCompassResult getPlayerCompassResult = getPlayerCompass(player);
+        ItemStack compass = getPlayerCompassResult.itemStack();
+        if (compass == null) {
+            return;
+        }
+        if (player.getWorld().getEnvironment() != Environment.NORMAL) {
+            CompassMeta meta = (CompassMeta)compass.getItemMeta();
+            meta.setLodestoneTracked(false);
+            compass.setItemMeta(meta);
+        } else {
+            // Spigot won't let us clear the metadata, so just give a new one
+            int slot = getPlayerCompassResult.slot();
+            PlayerInventory inv = player.getInventory();
+            inv.remove(compass);
+            giveTrackingCompass(player, getPlayerTarget(player), slot);
         }
     }
 
@@ -616,10 +642,10 @@ public class ManhuntManager
         return players;
     }
 
-    public ChatColor getTeamColor(int teamID)
+    public NamedTextColor getTeamColor(int teamID)
     {
         String colorChar = this.config.getString(this.teamNames[teamID] + "Color");
-        return colorChar == null ? ChatColor.WHITE : ChatColor.getByChar(colorChar);
+        return colorChar == null ? NamedTextColor.WHITE : NamedTextColor.NAMES.valueOr(colorChar, NamedTextColor.WHITE);
     }
 
     public boolean getStarted()
@@ -706,38 +732,16 @@ public class ManhuntManager
         }
     }
 
-    private void regenWorld(MVWorldManager worldManager, String name, String seed)
-    {
+    private void regenWorld(MVWorldManager worldManager, String name, String seed) {
         this.broadcastActionBar("Preparing \"" + name + "\"");
         worldManager.regenWorld(name, true, false, seed);
         MultiverseWorld mvWorld = worldManager.getMVWorld(name);
-        World cbWorld = mvWorld.getCBWorld();
-        Location loc0 = cbWorld.getSpawnLocation();
-        Location loc1 = new Location(cbWorld, loc0.getX(), loc0.getY(), loc0.getZ());
-        mvWorld.setSpawnLocation(loc1);
+        WorldUtils.fixWorldSpawnLocation(mvWorld);
     }
 
-    private void broadcastActionBar(String msg)
-    {
-        for (Player player : getParticipants())
-            player.sendActionBar(msg);
-    }
-
-    public void awardPlayerAdvancement(Player player, String key)
-    {
-        NamespacedKey nkey = NamespacedKey.minecraft(key);
-        AdvancementProgress progress = player.getAdvancementProgress(Bukkit.getAdvancement(nkey));
-        for (String criteria : progress.getRemainingCriteria())
-            progress.awardCriteria(criteria);
-    }
-
-    public void revokePlayerAdvancements(Player player)
-    {
-        Iterator<Advancement> iterator = Bukkit.getServer().advancementIterator();
-        while (iterator.hasNext()) {
-            AdvancementProgress progress = player.getAdvancementProgress(iterator.next());
-            for (String criteria : progress.getAwardedCriteria())
-                progress.revokeCriteria(criteria);
+    private void broadcastActionBar(String msg) {
+        for (Player player : getParticipants()) {
+            player.sendActionBar(Component.text(msg));
         }
     }
 }

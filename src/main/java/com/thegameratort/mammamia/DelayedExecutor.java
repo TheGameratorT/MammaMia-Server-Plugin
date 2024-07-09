@@ -5,15 +5,24 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
 
-public class DelayedExecutor
-{
-    private static class Entry
-    {
-        Runnable func;
+public class DelayedExecutor {
+    public static class Event {
+        private boolean cancelled = false;
+
+        public void cancel() {
+            this.cancelled = true;
+        }
+    }
+
+    public interface Callback {
+        void run(Event e);
+    }
+
+    private static class Entry {
+        Callback func;
         Integer delay;
 
-        Entry(Runnable func, Integer delay)
-        {
+        Entry(Callback func, Integer delay) {
             this.func = func;
             this.delay = delay;
         }
@@ -22,29 +31,27 @@ public class DelayedExecutor
     private final ArrayList<Entry> entries = new ArrayList<>();
     private final Plugin plugin;
 
-    public DelayedExecutor(Plugin plugin)
-    {
+    public DelayedExecutor(Plugin plugin) {
         this.plugin = plugin;
     }
 
-    public void add(Runnable func, int delay)
-    {
+    public void add(Callback func, int delay) {
         this.entries.add(new Entry(func, delay));
     }
 
-    public void runAll()
-    {
+    public void runAll() {
         this.run(0);
     }
 
-    private void run(int i)
-    {
-        if (this.entries.size() > i)
-        {
+    private void run(int i) {
+        if (this.entries.size() > i) {
             Entry entry = this.entries.get(i);
             Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
-                entry.func.run();
-                this.run(i + 1);
+                Event event = new Event();
+                entry.func.run(event);
+                if (!event.cancelled) {
+                    this.run(i + 1);
+                }
             }, entry.delay);
         }
     }

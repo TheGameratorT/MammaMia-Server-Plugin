@@ -45,14 +45,14 @@ public class PvPListener implements Listener {
         DelayedExecutor executor = new DelayedExecutor(plugin);
         for (int i = 3; i > 0; i--) {
             String title = ChatColor.BLUE + Integer.toString(i);
-            executor.add(() -> {
+            executor.add(e -> {
                 for (Player player : players) {
                     player.sendTitle(title, null, 10, 70, 20);
                     player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 1.0F, 2.0F);
                 }
             }, 20);
         }
-        executor.add(() -> {
+        executor.add(e -> {
             for (Player player : players) {
                 String titleMsg = game.isSpleef ? "Dig!" : "Fight!";
                 player.sendTitle(ChatColor.RED + titleMsg, null, 10, 20, 20);
@@ -81,7 +81,7 @@ public class PvPListener implements Listener {
             DelayedExecutor executor = new DelayedExecutor(plugin);
             Player winner = players.get(players.indexOf(loser) == 1 ? 0 : 1);
             for (int i = 0; i < 16; i++) {
-                executor.add(() -> {
+                executor.add(e -> {
                     winner.playSound(winner.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0F, 1.0F);
                 }, 5);
             }

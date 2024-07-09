@@ -11,6 +11,7 @@ import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.multiverseinventories.MultiverseInventories;
 import com.thegameratort.mammamia.discord.DiscordManager;
+import com.thegameratort.mammamia.ffa.FFAManager;
 import com.thegameratort.mammamia.gui.GUIListener;
 import com.thegameratort.mammamia.kit.Kit;
 import com.thegameratort.mammamia.kit.KitItem;
@@ -32,6 +33,7 @@ public final class MammaMia extends JavaPlugin {
     private ManhuntManager mhMgr = null;
     private PvPManager pvpMgr = null;
     private KitManager kitMgr = null;
+    private FFAManager ffaMgr = null;
     private TrackManager trackMgr = null;
     private DiscordManager discordMgr = null;
     private ProtocolManager protocolMgr = null;
@@ -78,6 +80,7 @@ public final class MammaMia extends JavaPlugin {
         this.mhMgr = new ManhuntManager(this);
         this.pvpMgr = new PvPManager(this);
         this.kitMgr = new KitManager(this);
+        this.ffaMgr = new FFAManager(this);
 
         // Do not broadcast achievements that spectators get
         this.protocolMgr.addPacketListener(new PacketAdapter(
@@ -114,8 +117,8 @@ public final class MammaMia extends JavaPlugin {
     }
 
     public void onDisable() {
-        this.discordMgr.shutdown();
         this.trackMgr.destroy();
+        this.discordMgr.shutdown();
     }
 
     public MultiverseCore getMvCore() { return this.mvCore; }
@@ -127,6 +130,8 @@ public final class MammaMia extends JavaPlugin {
     public PvPManager getPvpMgr() { return this.pvpMgr; }
 
     public KitManager getKitMgr() { return this.kitMgr; }
+
+    public FFAManager getFfaMgr() { return this.ffaMgr; }
 
     public DiscordManager getDiscordMgr() { return this.discordMgr; }
 

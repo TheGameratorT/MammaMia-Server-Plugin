@@ -1,16 +1,20 @@
 package com.thegameratort.mammamia.manhunt;
 
 import com.thegameratort.mammamia.MammaMia;
+import com.thegameratort.mammamia.WorldUtils;
+import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
@@ -50,13 +54,13 @@ public class ManhuntListener implements Listener
             if (teamID != ManhuntTeam.Hunters && teamID != ManhuntTeam.Runners)
                 return;
 
-            Inventory inv = Bukkit.createInventory(null, 9, "Select a player to track");
+            Inventory inv = Bukkit.createInventory(null, 9, Component.text("Select a player to track"));
             for (TrackingTarget target : this.getAvailableTargets(player, teamID))
             {
                 ItemStack stack = new ItemStack(Material.PLAYER_HEAD, 1);
                 SkullMeta meta = (SkullMeta)stack.getItemMeta();
                 meta.setOwningPlayer(target.player);
-                meta.setDisplayName(this.mhMgr.getTeamColor(target.teamID) + target.player.getName());
+                meta.displayName(Component.text(target.player.getName()).color(this.mhMgr.getTeamColor(target.teamID)));
                 stack.setItemMeta(meta);
                 inv.addItem(stack);
             }
@@ -113,19 +117,24 @@ public class ManhuntListener implements Listener
             return;
 
         ItemMeta imeta = item.getItemMeta();
-        if (!(imeta instanceof SkullMeta))
+        if (!(imeta instanceof SkullMeta smeta))
         {
             event.setCancelled(true);
             return;
         }
 
-        SkullMeta smeta = (SkullMeta)imeta;
-        OfflinePlayer runner = smeta.getOwningPlayer();
+		OfflinePlayer runner = smeta.getOwningPlayer();
+        if (runner == null)
+        {
+            event.setCancelled(true);
+            return;
+        }
+
         String runnerName = runner.getName();
 
         if (runner instanceof Player)
         {
-            this.mhMgr.setPlayerTarget(hunter, (Player)runner, this.mhMgr.getPlayerCompass(hunter));
+            this.mhMgr.setPlayerTarget(hunter, (Player)runner, this.mhMgr.getPlayerCompass(hunter).itemStack());
             hunter.sendMessage("Compass is now tracking " + runnerName);
         }
         else
@@ -151,6 +160,20 @@ public class ManhuntListener implements Listener
     }
 
     @EventHandler
+    public void onBlockBreak(BlockBreakEvent event)
+    {
+        Player player = event.getPlayer();
+        PlayerInventory inv = player.getInventory();
+        ItemStack stack = inv.getItemInMainHand();
+        if (stack.getType() == Material.COMPASS) {
+            int teamID = this.mhMgr.getPlayerTeam(player);
+            if (teamID == ManhuntTeam.Hunters || teamID == ManhuntTeam.Runners) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlayerMove(PlayerMoveEvent event)
     {
         Player target = event.getPlayer();
@@ -170,7 +193,7 @@ public class ManhuntListener implements Listener
         if (this.mhMgr.getPlayerInTeam(player, ManhuntTeam.Hunters))
         {
             Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, () -> {
-                this.mhMgr.giveTrackingCompass(player, this.mhMgr.getPlayerTarget(player));
+                this.mhMgr.giveTrackingCompass(player, this.mhMgr.getPlayerTarget(player), -1);
             }, 1);
         }
     }
@@ -200,7 +223,7 @@ public class ManhuntListener implements Listener
                         }
                         else
                         {
-                            p.sendActionBar("Your target is not in that dimension.");
+                            p.sendActionBar(Component.text("Your target is not in that dimension."));
                         }
                     }
                     break;
@@ -209,7 +232,7 @@ public class ManhuntListener implements Listener
                         // only hunters get this message
                         if (this.mhMgr.getPlayerInTeam(hunter, ManhuntTeam.Hunters)) {
                             if (dw != hunter.getWorld())
-                                hunter.sendActionBar("Your target left your dimension.");
+                                hunter.sendActionBar(Component.text("Your target left your dimension."));
                         }
                     }
                     break;
@@ -217,9 +240,19 @@ public class ManhuntListener implements Listener
         }
 
         if (dn.equals("manhunt_nether"))
-            this.mhMgr.awardPlayerAdvancement(p, "story/enter_the_nether");
+            WorldUtils.awardPlayerAdvancement(p, "story/enter_the_nether");
         else if (dn.equals("manhunt_the_end"))
-            this.mhMgr.awardPlayerAdvancement(p, "story/enter_the_end");
+            WorldUtils.awardPlayerAdvancement(p, "story/enter_the_end");
+    }
+
+    @EventHandler
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event)
+    {
+        Player p = event.getPlayer();
+        int teamID = this.mhMgr.getPlayerTeam(p);
+        if (teamID == ManhuntTeam.Hunters || teamID == ManhuntTeam.Runners) {
+            this.mhMgr.updateCompassEnvironment(p);
+        }
     }
 
     @EventHandler
